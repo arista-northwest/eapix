@@ -117,7 +117,7 @@ class Session(BaseSession):
             options["timeout"] = eapi.environments.EAPI_DEFAULT_TIMEOUT
 
         try:
-            response = self._session.post(url, data=json.dumps(data),
+            response = self._session.post(url, content=json.dumps(data),
                                             **options)
         except httpx.HTTPError as exc:
             raise EapiError(str(exc))
@@ -224,7 +224,7 @@ class AsyncSession(BaseSession):
             options["timeout"] = eapi.environments.EAPI_DEFAULT_TIMEOUT
 
         try:
-            response = await self._session.post(url, data=json.dumps(data),
+            response = await self._session.post(url, content=json.dumps(data),
                                                 **options)
         except httpx.HTTPError as exc:
             raise EapiError(str(exc))
