@@ -1,5 +1,5 @@
-EAPI-PY: Simple EAPI library
-============================
+EAPI-PY: HTTPx/Asyncio EAPI library
+===================================
 
 Features:
 ---------
