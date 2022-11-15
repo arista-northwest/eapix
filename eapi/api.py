@@ -6,7 +6,7 @@ import math
 import re
 import time
 
-from typing import Callable, Iterator, List, Optional
+from typing import Callable, Iterator, List, Optional, Union
 
 from eapi.types import Auth, Certificate, Command
 from eapi.messages import Response
@@ -16,7 +16,7 @@ NEVER_RE = r'(?!x)x'
 
 
 def execute(target: str,
-            commands: List[Command],
+            commands: List[Union[str, Command]],
             encoding: Optional[str] = None,
             auth: Optional[Auth] = None,
             cert: Optional[Certificate] = None,
@@ -30,7 +30,7 @@ def execute(target: str,
     :param type: list
     :param encoding: json or text (default: json)
     :param type: str
-    :param \*\*kwargs: pass through ``httpx`` options
+    :param **kwargs: pass through ``httpx`` options
 
     :return: :class:`Response <Response>` object
     :rtype: eapi.messages.Response
@@ -40,7 +40,7 @@ def execute(target: str,
         return sess.call(target, commands, encoding=encoding, **kwargs)
 
 
-def enable(target: str, commands: List[Command], secret: str = "",
+def enable(target: str, commands: List[Union[str, Command]], secret: str = "",
            encoding: Optional[str] = None, **kwargs) -> Response:
     """Prepend 'enable' command
     :param target: eAPI target 
@@ -49,17 +49,17 @@ def enable(target: str, commands: List[Command], secret: str = "",
     :param type: list
     :param encoding: json or text (default: json)
     :param type: str
-    :param \*\*kwargs: Optional arguments that ``_send`` takes.
+    :param **kwargs: Optional arguments that ``_send`` takes.
 
     :return: :class:`Response <Response>` object
     :rtype: eapi.messages.Response
     """
 
-    commands.insert(0, {"cmd": "enable", "input": secret})
+    commands.insert(0, Command(cmd="enable", input=secret))
     return execute(target, commands, encoding, **kwargs)
 
 
-def configure(target: str, commands: List[Command],
+def configure(target: str, commands: List[Union[str, Command]],
               encoding: Optional[str] = None, **kwargs) -> Response:
     """Wrap commands in a 'configure'/'end' block
 
@@ -69,14 +69,14 @@ def configure(target: str, commands: List[Command],
     :param type: list
     :param encoding: json or text (default: json)
     :param type: str
-    :param \*\*kwargs: Optional arguments that ``execute`` takes.
+    :param **kwargs: Optional arguments that ``execute`` takes.
 
     :return: :class:`Response <Response>` object
     :rtype: eapi.messages.Response
     """
 
-    commands.insert(0, "configure")
-    commands.append("end")
+    commands.insert(0, Command("configure"))
+    commands.append(Command("end"))
     return execute(target, commands, encoding, **kwargs)
 
 
@@ -108,7 +108,7 @@ def watch(target: str,
     :param condition: search for pattern in output, return if matched
     :param type: str
 
-    :param \*\*kwargs: Optional arguments that ``execute`` takes.
+    :param **kwargs: Optional arguments that ``execute`` takes.
 
     :return: :class:`Response <Response>` object
     :rtype: eapi.messages.Response
@@ -149,7 +149,7 @@ def watch(target: str,
 
 
 async def aexecute(target: str,
-                   commands: List[Command],
+                   commands: List[Union[str, Command]],
                    encoding: Optional[str] = None,
                    auth: Optional[Auth] = None,
                    cert: Optional[Certificate] = None,
@@ -163,7 +163,7 @@ async def aexecute(target: str,
     :param type: list
     :param encoding: json or text (default: json)
     :param type: str
-    :param \*\*kwargs: pass through ``httpx`` options
+    :param **kwargs: pass through ``httpx`` options
 
     :return: :class:`Response <Response>` object
     :rtype: eapi.messages.Response
@@ -173,7 +173,7 @@ async def aexecute(target: str,
         return await sess.call(target, commands, encoding=encoding, **kwargs)
 
 
-async def aenable(target: str, commands: List[Command], secret: str = "",
+async def aenable(target: str, commands: List[Union[str, Command]], secret: str = "",
                   encoding: Optional[str] = None, **kwargs) -> Response:
     """Prepend 'enable' command (async version)
     :param target: eAPI target 
@@ -182,17 +182,17 @@ async def aenable(target: str, commands: List[Command], secret: str = "",
     :param type: list
     :param encoding: json or text (default: json)
     :param type: str
-    :param \*\*kwargs: Optional arguments that ``_send`` takes.
+    :param **kwargs: Optional arguments that ``_send`` takes.
 
     :return: :class:`Response <Response>` object
     :rtype: eapi.messages.Response
     """
 
-    commands.insert(0, {"cmd": "enable", "input": secret})
+    commands.insert(0, Command(cmd="enable", input=secret))
     return await aexecute(target, commands, encoding, **kwargs)
 
 
-async def aconfigure(target: str, commands: List[Command],
+async def aconfigure(target: str, commands: List[Union[str, Command]],
                      encoding: Optional[str] = None, **kwargs) -> Response:
     """Wrap commands in a 'configure'/'end' block (async version)
 
@@ -202,7 +202,7 @@ async def aconfigure(target: str, commands: List[Command],
     :param type: list
     :param encoding: json or text (default: json)
     :param type: str
-    :param \*\*kwargs: Optional arguments that ``execute`` takes.
+    :param **kwargs: Optional arguments that ``execute`` takes.
 
     :return: :class:`Response <Response>` object
     :rtype: eapi.messages.Response
@@ -214,7 +214,7 @@ async def aconfigure(target: str, commands: List[Command],
 
 
 async def awatch(target: str,
-                 command: Command,
+                 command: Union[str, Command],
                  callback: Callable = None,
                  encoding: Optional[str] = None,
                  interval: Optional[int] = None,
@@ -242,7 +242,7 @@ async def awatch(target: str,
     :param type: bool
     :param condition: search for pattern in output, return if matched
     :param type: str
-    :param \*\*kwargs: Optional arguments that ``execute`` takes.
+    :param **kwargs: Optional arguments that ``execute`` takes.
 
     :return: :class:`Response <Response>` object
     :rtype: eapi.messages.Response
