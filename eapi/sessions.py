@@ -5,13 +5,13 @@
 import json
 import warnings
 
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, Type
 
 import httpx
 
 import eapi.environments
 
-from eapi.util import prepare_request
+from eapi.util import prepare_request, asdict
 from eapi.exceptions import EapiAuthenticationFailure, EapiError, \
     EapiPathNotFoundError, EapiTimeoutError
 from eapi.types import Auth, Certificate, Command
@@ -21,7 +21,7 @@ from eapi.messages import Response, Target
 class BaseSession(object):
 
     def __init__(self,
-                 klass: type, #Union[httpx.Client, httpx.AsyncClient],
+                 klass: Type[Union[httpx.Client, httpx.AsyncClient]],
                  auth: Optional[Auth] = None,
                  cert: Optional[Certificate] = None,
                  verify: Optional[bool] = None,
@@ -95,7 +95,7 @@ class Session(BaseSession):
                  **kwargs):
 
         super().__init__(
-            klass=httpx.Client,
+            klass=httpx.Client, # why does this irritate pyright
             auth=auth,
             cert=cert,
             verify=verify,
@@ -108,7 +108,7 @@ class Session(BaseSession):
     def __exit__(self, *args) -> None:
         self.close()
 
-    def _call(self, url, data, **options) -> httpx.Response:
+    def _call(self, url, data: dict, **options) -> httpx.Response:
         """calls the request to EAPI"""
 
         response = None
@@ -166,7 +166,7 @@ class Session(BaseSession):
 
         self._handle_login_response(target_, auth, resp)
 
-    def call(self, target: Union[str, Target], commands: List[Command],
+    def call(self, target: Union[str, Target], commands: List[Union[str, Command]],
              encoding: Optional[str] = None, **kwargs):
         """call commands to an eAPI target
 
@@ -175,7 +175,7 @@ class Session(BaseSession):
         :param commands: List of `Command` objects
         :param type: list
         :param encoding: response encoding 'json' or 'text' (default: json)
-        :param \*\*kwargs: other pass through `httpx` options
+        :param **kwargs: other pass through `httpx` options
         :param type: dict
 
         """
@@ -189,7 +189,7 @@ class Session(BaseSession):
         request = prepare_request(commands, encoding)
 
         response = self._call(target_.url + "/command-api",
-                              data=request, **options)
+                              data=asdict(request), **options)
 
         return Response.from_rpc_response(target_, request, response.json())
 
@@ -215,7 +215,7 @@ class AsyncSession(BaseSession):
     async def __aexit__(self, *args) -> None:
         await self.close()
 
-    async def _call(self, url, data, **options) -> httpx.Response:
+    async def _call(self, url, data: dict, **options) -> httpx.Response:
         """Post to eAPI endpoint"""
 
         response = None
@@ -243,9 +243,6 @@ class AsyncSession(BaseSession):
         :param type: Target
         :param auth: username, password tuple
         :param type: Auth
-        :param \*\*options: other pass through `httpx` options
-        :param type: HttpxOptions
-
         """
         target_: Target = Target.from_string(target)
 
@@ -275,7 +272,7 @@ class AsyncSession(BaseSession):
         if self.logged_in(target):
             await self._call(target_.url + "/logout", data={})
 
-    async def call(self, target: Union[str, Target], commands: List[Command],
+    async def call(self, target: Union[str, Target], commands: List[Union[str, Command]],
                    encoding: Optional[str] = None, **kwargs):
         """call commands to an eAPI target
 
@@ -284,7 +281,7 @@ class AsyncSession(BaseSession):
         :param commands: List of `Command` objects
         :param type: list
         :param encoding: response encoding 'json' or 'text' (default: json)
-        :param \*\*kwargs: other pass through `httpx` options
+        :param **kwargs: other pass through `httpx` options
         :param type: dict
 
         """
@@ -298,6 +295,6 @@ class AsyncSession(BaseSession):
         request = prepare_request(commands, encoding)
 
         response = await self._call(target_.url + "/command-api",
-                                    data=request, **options)
+                                    data=asdict(request), **options)
 
         return Response.from_rpc_response(target_, request, response.json())

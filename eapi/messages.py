@@ -8,24 +8,23 @@ import re
 from collections.abc import Mapping
 from pprint import pformat
 from typing import List, Union, Optional
-from typing_extensions import TypedDict
+#from typing_extensions import TypedDict
 
 import eapi.sessions
 
 from eapi.environments import EAPI_DEFAULT_TRANSPORT
-from eapi.types import Command
-from eapi.util import zpad, indent
+from eapi.types import Command, Error
+from eapi.util import zpad, indent, asdict
 
 _TRANSPORTS = {"http": 80, "https": 443}
 _TARGET_RE = re.compile(r"^(?:(?P<transport>\w+)\:\/\/)?"
                         r"(?P<hostname>[\w+\-\.]+)(?:\:"
                         r"(?P<port>\d{,5}))?/*?$")
 
-Error = TypedDict('Error', {
-    'code': int,
-    'message': str
-})
-
+# Error = TypedDict('Error', {
+#     'code': int,
+#     'message': str
+# })
 
 class JsonResult(Mapping):
     def __init__(self, result: dict):
@@ -63,13 +62,13 @@ class TextResult(object):
 class ResponseElem(object):
     def __init__(self, command: Command,
                  result: Union[TextResult, JsonResult]):
-        self._command = command
-
-        if isinstance(self._command, str):
-            self.command = self._command
-        else:
-            self.command = self._command["cmd"]
-            self.input = self._command["input"]
+        self.command = command
+        # self.input = ""
+        # if isinstance(self._command, str):
+        #     self.command = self._command
+        # else:
+        #     self.command = self._command.cmd
+        #     self.input = self._command.input
 
         self.result = result
 
@@ -80,8 +79,7 @@ class ResponseElem(object):
             result = str(self.result)
 
         return {
-            "command": self.command,
-            "input": self.input,
+            "command": asdict(self.command),
             "result": result
         }
 
@@ -92,7 +90,7 @@ class ResponseElem(object):
 class Response(Mapping):
 
     def __init__(self, target, elements: List[ResponseElem],
-                 error: Error = None):
+                 error: Optional[Error] = None):
         self._target = target
         self.elements = elements
         self.error = error
@@ -111,11 +109,11 @@ class Response(Mapping):
 
     @property
     def code(self):
-        return self.error.get("code", 0)
+        return self.error.code
 
     @property
     def message(self):
-        return self.error.get("message", "OK")
+        return self.error.message
 
     @property
     def target(self):
@@ -147,7 +145,7 @@ class Response(Mapping):
         text += "responses:\n"
 
         for elem in self.elements:
-            text += "- command: %s\n" % elem.command
+            text += "- command: %s\n" % elem.command.cmd
             text += "  result: |\n"
             text += indent("    ", elem.result.pretty)
             text += "\n"
@@ -155,14 +153,12 @@ class Response(Mapping):
 
     @classmethod
     def from_rpc_response(cls, target, request, response):
+        """Convert JSON response to a `Response` object"""
+        
+        encoding = request.params.format
+        commands = request.params.cmds
 
-        encoding = request["params"]["format"]
-        commands = request["params"]["cmds"]
-
-        error: Error = {"code": 0, "message": ""}
-
-        code: int = 0
-        message: str = ""
+        error = Error(code=0, message="")
 
         errored = response.get("error")
         results = []
@@ -172,7 +168,7 @@ class Response(Mapping):
             results = errored.get("data", [])
             code = errored["code"]
             message = errored["message"]
-            error = {"code": code, "message": message}
+            error = Error(code, message)
         else:
             results = response["result"]
 
@@ -243,3 +239,6 @@ class Target(object):
         port = int(port) if port else None
 
         return cls(hostname, transport, port)
+
+class JsonRpcMessage:
+    pass

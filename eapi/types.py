@@ -3,34 +3,40 @@
 # Arista Networks, Inc. Confidential and Proprietary.
 
 from typing import List, Optional, Tuple, Union
-from typing_extensions import TypedDict
+from dataclasses import asdict, dataclass, field
 
-PromptedCommand = TypedDict('PromptedCommand', {
-    'cmd': str,
-    'input': str
-})
+@dataclass
+class BaseType:
+    pass
 
-Command = Union[str, PromptedCommand]
+@dataclass
+class Error(BaseType):
+    code: int
+    message: str
 
-Params = TypedDict('Params', {
-    'version': int,
-    'cmds': List[Command],
-    'format': str,
-    'timestamps': bool,
-	'auto_complete': bool,
-	'expand_aliases': bool,
-	'include_error_detail': bool,
-	'streaming': bool # not support until 4.24
-}, total=False)
+@dataclass
+class Command(BaseType):
+    cmd: str
+    input: str = ""
 
-Request = TypedDict('Request', {
-    'id': str,
-    'jsonrpc': str,
-    'method': str,
-    'streaming': bool, # eAPI hack
-    'params': Params
-}, total=False)
+@dataclass
+class Params(BaseType):
+    cmds: List[Union[str, Command]]
+    version: int = 1
+    format: str = 'text'
+    timestamps: Optional[bool] = None
+    autoComplete: Optional[bool] = None
+    expandAliases: Optional[bool] = None
+    includeErrorDetail: Optional[bool] = None
+    streaming: Optional[bool] = None
 
+@dataclass
+class Request(BaseType):
+    params: Params
+    id: str = ""
+    jsonrpc: str = "2.0"
+    method: str = "runCmds"
+    streaming: bool = False # eAPI hack
 
 Auth = Tuple[str, Optional[str]]
 
