@@ -12,3 +12,4 @@ import eapi.types
 
 from eapi.sessions import Session, AsyncSession
 from eapi.api import aexecute, awatch, configure, enable, execute, watch
+from eapi.exceptions import EapiError, EapiHttpError, EapiPathNotFoundError, EapiResponseError, EapiTimeoutError
