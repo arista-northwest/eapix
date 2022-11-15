@@ -5,7 +5,7 @@ init:
 	pipenv install --dev
 
 test:
-	pipenv run coverage run -m pytest test_eapi.py
+	pipenv run coverage run -m pytest tests/
 
 publish:
 	pip3 install 'twine>=1.5.0'
