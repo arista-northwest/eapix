@@ -2,9 +2,13 @@
 # Copyright (c) 2020 Arista Networks, Inc.  All rights reserved.
 # Arista Networks, Inc. Confidential and Proprietary.
 
+import sys
+
+from eapi.exceptions import EapiError
 import click
 
 import eapi
+import eapi.exceptions
 import eapi.environments
 
 from eapi import util
@@ -42,19 +46,21 @@ def main(ctx, target, encoding, username, password, cert, key, verify):
 @click.argument("commands", nargs=-1, required=True)
 @click.pass_context
 def execute(ctx, commands):
-
     target = ctx.obj["target"]
     encoding = ctx.obj["encoding"]
     auth = ctx.obj["auth"]
     cert = ctx.obj["cert"]
     verify = ctx.obj["verify"]
 
-    resp = eapi.execute(target, commands,
-                        encoding=encoding,
-                        auth=auth,
-                        cert=cert,
-                        verify=verify)
-
+    try:
+        resp = eapi.execute(target, commands,
+                            encoding=encoding,
+                            auth=auth,
+                            cert=cert,
+                            verify=verify)
+    except eapi.exceptions.EapiError as err:
+        sys.exit(str(err))
+    
     if encoding == "json":
         print(resp.json)
     else:
@@ -65,7 +71,7 @@ def execute(ctx, commands):
 @click.argument("command", nargs=1, required=True)
 @click.option("--interval", "-i", type=int, default=None, help="Time between sends")
 @click.option("--deadline", "-d", type=float, default=None, help="Limit how long to watch")
-@click.option("--exclude / --no-exclude", default=False, help="Match if condition is FALSE")
+@click.option("--exclude", is_flag=True, help="Match if condition is FALSE")
 @click.option("--condition", "-c", default=None, help="Pattern to search for, watch ends when matched")
 @click.pass_context
 def watch(ctx, command, interval, deadline, exclude, condition):
@@ -85,13 +91,16 @@ def watch(ctx, command, interval, deadline, exclude, condition):
             print()
             print(response[0])
 
-    eapi.watch(target, command,
-               callback=_cb,
-               encoding=encoding,
-               interval=interval,
-               deadline=deadline,
-               exclude=exclude,
-               condition=condition,
-               auth=auth,
-               cert=cert,
-               verify=verify)
+    try:
+        eapi.watch(target, command,
+                callback=_cb,
+                encoding=encoding,
+                interval=interval,
+                deadline=deadline,
+                exclude=exclude,
+                condition=condition,
+                auth=auth,
+                cert=cert,
+                verify=verify)
+    except eapi.EapiError as err:
+        sys.exit(str(err))
