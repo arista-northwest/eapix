@@ -23,10 +23,9 @@ def test_json_result(json_response):
 def test_response_elem(json_response, text_response):
     _, request, response = json_response
 
-    c = request["params"]["cmds"][-1]
+    c = request.params.cmds[-1]
     r = response["result"][1]
     t = text_response[-1]["result"][1]["output"]
-    ResponseElem(c["cmd"], JsonResult(r))
     e = ResponseElem(c, JsonResult(r))
     str(e)
     e.to_dict()

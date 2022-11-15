@@ -3,11 +3,13 @@
 # Copyright (c) 2020 Arista Networks, Inc.  All rights reserved.
 # Arista Networks, Inc. Confidential and Proprietary.
 
+from dataclasses import dataclass
 from typing import Tuple, Optional
 import pytest
 
 import eapi.sessions
-from eapi.util import indent, prepare_cmd, prepare_request, zpad
+import eapi.environments
+from eapi.util import indent, prepare_request, zpad, asdict
 
 
 @pytest.mark.parametrize("text", [
@@ -17,33 +19,33 @@ def test_indent(text):
     indent(" " * 10, text)
 
 
-@pytest.mark.parametrize("cmd", [
-    "show some stuff",
-    {"cmd": "show secret stuff", "input": "s3c3rt"},
-    ["show some stuff", {"cmd": "show secret stuff", "input": "s3c3rt"}]
-])
-def test_prepare_cmd(cmd):
-    commands = prepare_cmd(cmd)
-    for cmd in commands:
-        assert "cmd" in cmd
-        assert "input" in cmd
-        assert len(cmd["cmd"]) > 0
+# @pytest.mark.parametrize("cmd", [
+#     "show some stuff",
+#     {"cmd": "show secret stuff", "input": "s3c3rt"},
+#     ["show some stuff", {"cmd": "show secret stuff", "input": "s3c3rt"}]
+# ])
+# def test_prepare_cmd(cmd):
+#     commands = prepare_cmd(cmd)
+#     for cmd in commands:
+#         assert "cmd" in cmd
+#         assert "input" in cmd
+#         assert len(cmd["cmd"]) > 0
 
 
-def test_prepare_request(reqwest):
+def test_prepare_request(request_):
 
-    assert reqwest["jsonrpc"] == "2.0"
-    assert reqwest["method"] == "runCmds"
-    assert isinstance(reqwest["id"], str)
-    assert reqwest["params"]["version"] == 1
-    assert reqwest["params"]["format"] in ("json", "text")
-    for command in reqwest["params"]["cmds"]:
-        assert "cmd" in command
-        assert "input" in command
-        assert len(command["cmd"]) > 0
+    assert request_.jsonrpc == "2.0"
+    assert request_.method == "runCmds"
+    assert isinstance(request_.id, str)
+    assert request_.params.version == 1
+    assert request_.params.format in ("json", "text")
+    for command in request_.params.cmds:
+        # assert "cmd" in command
+        # assert "input" in command
+        assert len(command.cmd) > 0
 
     p = prepare_request(["show stuff"])
-    assert p["params"]["format"] == eapi.environments.EAPI_DEFAULT_ENCODING
+    assert p.params.format == eapi.environments.EAPI_DEFAULT_ENCODING
 
 
 def test_zpad():
@@ -55,3 +57,18 @@ def test_zpad():
 
     with pytest.raises(ValueError):
         zpad(z[:], a[:], None)
+
+# @dataclass
+# class TestData:
+#     a: str
+#     b: str
+#     c: Optional[str] = None
+
+# def test_asdict():
+#     d = TestData("a", "b", "c")
+#     print(asdict(d))
+
+#     d = TestData("a", "b", None)
+
+#     print(asdict(d))
+

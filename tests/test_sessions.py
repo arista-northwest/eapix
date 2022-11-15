@@ -6,7 +6,7 @@ from sys import version
 import httpx
 import pytest
 
-from eapi.util import prepare_request
+from eapi.util import prepare_request, asdict
 
 import eapi
 import eapi.exceptions
@@ -21,13 +21,13 @@ def test_login(session, server, auth):
 
 
 def test_login_err(server):
-    target = str(server.url)
+    target = Target.from_string(str(server.url))
     with Session() as sess:
         with pytest.raises(eapi.exceptions.EapiAuthenticationFailure):
-            sess.login(target, auth=("sdfsf", "sfs"))
+            sess.login(target, ("b4d", "p4ss"))
 
         with pytest.raises(httpx.HTTPError):
-            sess._call(Target.from_string(target).url + "/login", None)
+            sess._call(Target.from_string(target).url + "/login", data={})
 
 
 def test_call(session, server, auth):
@@ -46,8 +46,8 @@ def test_jsonrpc_error(session, server):
     target = str(server.url)
     tgt = Target.from_string(target)
     req = prepare_request(["show hostname"])
-    req["method"] = "bogus"
-    resp = session._call(tgt.url + "/command-api", req)
+    req.method = "bogus"
+    resp = session._call(tgt.url + "/command-api", asdict(req))
 
     rresp = Response.from_rpc_response(tgt, req, resp.json())
 
@@ -75,12 +75,6 @@ def test_ssl_verify(starget, cert):
     with pytest.raises(eapi.exceptions.EapiError):
         sess.call(starget, ["show hostname"])
 
-
-def test_ssl(session, starget, cert):
-    sess = Session(cert=cert)
-    sess.call(starget, ["show hostname"])
-
-
 def test_logout(server, auth):
     target = str(server.url)
     with Session() as sess:
@@ -107,7 +101,7 @@ def test_unauth(session, server):
 
 @pytest.mark.asyncio
 async def test_async(server, auth):
-    target = str(server.url)
+    target = Target.from_string(str(server.url))
     targets = [target] * 4
     commands = [
         "show version",

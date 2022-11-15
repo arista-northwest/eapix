@@ -12,7 +12,7 @@ import eapi.environments
 from eapi.util import prepare_request
 from eapi.types import Certificate, Request
 from eapi.sessions import Session
-from eapi.messages import _TARGET_RE, Target
+from eapi.messages import _TARGET_RE, Target, Response
 
 
 sys.path.insert(0, os.path.abspath("."))
@@ -27,7 +27,7 @@ EAPI_CLIENT_KEY = os.environ.get('EAPI_CLIENT_KEY')
 
 # eapi.environments.SSL_WARNINGS = False
 
-from tests.server import server, https_server
+from tests.server import server #, https_server
 
 @pytest.fixture
 def auth():
@@ -81,7 +81,7 @@ def commands():
 
 
 @pytest.fixture(params=["json", "text"])
-def reqwest(commands, request) -> Request:
+def request_(commands, request) -> Request:
     return prepare_request(commands, request.param)
 
 @pytest.fixture()
@@ -115,7 +115,7 @@ def text_response():
             }
         ]
     }
-
+    
     return Target.from_string("localhost"), request, response
 
 
@@ -147,7 +147,7 @@ def json_response():
             }
         ]
     }
-
+    resp = Response.from_rpc_response(target, request, response)
     return Target.from_string("localhost"), request, response
 
 

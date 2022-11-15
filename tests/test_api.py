@@ -13,7 +13,6 @@ import eapi.messages
 
 # pytestmark = pytest.mark.skipif(not EAPI_TARGET, reason="target not set")
 
-
 def test_execute(server, commands, auth):
     target = str(server.url)
     eapi.execute(target, commands=commands, auth=auth)
@@ -26,14 +25,12 @@ def test_execute_text(server, commands, auth):
     target = str(server.url)
     eapi.execute(target, commands=commands, auth=auth, encoding="text")
 
-
 def test_execute_jsonerr(server, auth):
     target = str(server.url)
     response = eapi.execute(
         target, commands=["show hostname", "show bogus"], auth=auth, encoding="json")
 
     assert response.code > 0
-
 
 def test_execute_err(server, auth):
     target = str(server.url)
@@ -47,7 +44,6 @@ def test_execute_err(server, auth):
         auth=auth
     )
     assert response.code > 0
-
 
 def test_configure(server, auth):
     target = str(server.url)
