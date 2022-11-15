@@ -24,7 +24,7 @@ def execute(target: str,
             **kwargs) -> Response:
     """Send an eAPI request
 
-    :param target: eAPI target 
+    :param target: eAPI target
     :param type: Target
     :param commmands: List of commands to send to target
     :param type: list
@@ -43,7 +43,7 @@ def execute(target: str,
 def enable(target: str, commands: List[Union[str, Command]], secret: str = "",
            encoding: Optional[str] = None, **kwargs) -> Response:
     """Prepend 'enable' command
-    :param target: eAPI target 
+    :param target: eAPI target
     :param type: Target
     :param commmands: List of commands to send to target
     :param type: list
@@ -63,7 +63,7 @@ def configure(target: str, commands: List[Union[str, Command]],
               encoding: Optional[str] = None, **kwargs) -> Response:
     """Wrap commands in a 'configure'/'end' block
 
-    :param target: eAPI target 
+    :param target: eAPI target
     :param type: Target
     :param commmands: List of commands to send to target
     :param type: list
@@ -91,7 +91,7 @@ def watch(target: str,
           **kwargs) -> Optional[Iterator[Response]]:
     """Watch a command until deadline or condition matches
 
-    :param target: eAPI target 
+    :param target: eAPI target
     :param type: Target
     :param commmand: A single command to send
     :param type: list
@@ -157,7 +157,7 @@ async def aexecute(target: str,
                    **kwargs) -> Response:
     """Send command(s) to an eAPI target (async version)
 
-    :param target: eAPI target 
+    :param target: eAPI target
     :param type: Target
     :param commmands: List of commands to send to target
     :param type: list
@@ -176,7 +176,7 @@ async def aexecute(target: str,
 async def aenable(target: str, commands: List[Union[str, Command]], secret: str = "",
                   encoding: Optional[str] = None, **kwargs) -> Response:
     """Prepend 'enable' command (async version)
-    :param target: eAPI target 
+    :param target: eAPI target
     :param type: Target
     :param commmands: List of commands to send to target
     :param type: list
@@ -196,7 +196,7 @@ async def aconfigure(target: str, commands: List[Union[str, Command]],
                      encoding: Optional[str] = None, **kwargs) -> Response:
     """Wrap commands in a 'configure'/'end' block (async version)
 
-    :param target: eAPI target 
+    :param target: eAPI target
     :param type: Target
     :param commmands: List of commands to send to target
     :param type: list
@@ -226,7 +226,7 @@ async def awatch(target: str,
 
     """Watch a command until deadline or condition matches (async version)
 
-    :param target: eAPI target 
+    :param target: eAPI target
     :param type: Target
     :param commmand: A single command to send
     :param type: list
