@@ -11,9 +11,11 @@ pytest="*"
 pytest-asyncio="*"
 Sphinx="*"
 uvicorn="*"
+importlib-metadata="*"
 
 [packages]
 httpx="*"
-typing-extensions="*"
 click="*"
 
+[requires]
+python_version = "3.7"
