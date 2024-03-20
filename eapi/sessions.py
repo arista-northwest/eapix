@@ -117,8 +117,7 @@ class Session(BaseSession):
             options["timeout"] = eapi.environments.EAPI_DEFAULT_TIMEOUT
 
         try:
-            response = self._session.post(url, content=json.dumps(data),
-                                            **options)
+            response = self._session.post(url, json.dumps(data), **options)
         except httpx.HTTPError as exc:
             raise EapiError(str(exc))
 
@@ -167,7 +166,7 @@ class Session(BaseSession):
         self._handle_login_response(target_, auth, resp)
 
     def call(self, target: Union[str, Target], commands: List[Union[str, Command]],
-             encoding: Optional[str] = None, **kwargs):
+             encoding: Optional[str] = None, streaming: bool = False, **kwargs):
         """call commands to an eAPI target
 
         :param target: eAPI target (host, port)
@@ -186,7 +185,7 @@ class Session(BaseSession):
         options = self._eapi_sessions.get(target_.domain) or {}
         options.update(kwargs)
 
-        request = prepare_request(commands, encoding)
+        request = prepare_request(commands, encoding, streaming)
 
         response = self._call(target_.url + "/command-api",
                               data=asdict(request), **options)
@@ -273,7 +272,7 @@ class AsyncSession(BaseSession):
             await self._call(target_.url + "/logout", data={})
 
     async def call(self, target: Union[str, Target], commands: List[Union[str, Command]],
-                   encoding: Optional[str] = None, **kwargs):
+                   encoding: Optional[str] = None, streaming: bool = False, **kwargs):
         """call commands to an eAPI target
 
         :param target: eAPI target (host, port)
@@ -292,7 +291,7 @@ class AsyncSession(BaseSession):
         options = self._eapi_sessions.get(target_.domain) or {}
         options.update(kwargs)
 
-        request = prepare_request(commands, encoding)
+        request = prepare_request(commands, encoding, streaming)
 
         response = await self._call(target_.url + "/command-api",
                                     data=asdict(request), **options)

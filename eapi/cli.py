@@ -17,13 +17,14 @@ from eapi import util
 @click.group()
 @click.argument("target")
 @click.option("--encoding", "-e", default="text")
+@click.option("--streaming", "-s", is_flag=True, help="enable streaming mode")
 @click.option("--username", "-u", default="admin", help="Username (default: admin")
 @click.option("--password", "-p", default="", help="Username (default: <blank>")
 @click.option("--cert", help="Client certificate file")
 @click.option("--key", help="Private key file name")
 @click.option("--verify", is_flag=True, help="verify SSL cert")
 @click.pass_context
-def main(ctx, target, encoding, username, password, cert, key, verify):
+def main(ctx, target, encoding, streaming, username, password, cert, key, verify):
     pair = None
     auth = None
 
@@ -34,8 +35,9 @@ def main(ctx, target, encoding, username, password, cert, key, verify):
         auth = (username, password)
 
     ctx.obj = {
-        'encoding': encoding,
         'target': target,
+        'encoding': encoding,
+        'streaming': streaming,
         'auth': auth,
         'cert': pair,
         'verify': verify,
@@ -48,6 +50,7 @@ def main(ctx, target, encoding, username, password, cert, key, verify):
 def execute(ctx, commands):
     target = ctx.obj["target"]
     encoding = ctx.obj["encoding"]
+    streaming = ctx.obj["streaming"]
     auth = ctx.obj["auth"]
     cert = ctx.obj["cert"]
     verify = ctx.obj["verify"]
@@ -55,6 +58,7 @@ def execute(ctx, commands):
     try:
         resp = eapi.execute(target, commands,
                             encoding=encoding,
+                            streaming=streaming,
                             auth=auth,
                             cert=cert,
                             verify=verify)
@@ -78,6 +82,7 @@ def watch(ctx, command, interval, deadline, exclude, condition):
 
     target = ctx.obj["target"]
     encoding = ctx.obj["encoding"]
+    streaming = ctx.obj["streaming"]
     auth = ctx.obj["auth"]
     cert = ctx.obj["cert"]
     verify = ctx.obj["verify"]
@@ -95,6 +100,7 @@ def watch(ctx, command, interval, deadline, exclude, condition):
         eapi.watch(target, command,
                 callback=_cb,
                 encoding=encoding,
+                streaming=streaming,
                 interval=interval,
                 deadline=deadline,
                 exclude=exclude,

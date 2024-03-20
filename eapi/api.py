@@ -18,6 +18,7 @@ NEVER_RE = r'(?!x)x'
 def execute(target: str,
             commands: List[Union[str, Command]],
             encoding: Optional[str] = None,
+            streaming: bool = False,
             auth: Optional[Auth] = None,
             cert: Optional[Certificate] = None,
             verify: Optional[bool] = None,
@@ -37,11 +38,11 @@ def execute(target: str,
     """
 
     with Session(auth=auth, cert=cert, verify=verify) as sess:
-        return sess.call(target, commands, encoding=encoding, **kwargs)
+        return sess.call(target, commands, encoding, streaming, **kwargs)
 
 
 def enable(target: str, commands: List[Union[str, Command]], secret: str = "",
-           encoding: Optional[str] = None, **kwargs) -> Response:
+           encoding: Optional[str] = None, streaming: bool = False, **kwargs) -> Response:
     """Prepend 'enable' command
     :param target: eAPI target
     :param type: Target
@@ -56,7 +57,7 @@ def enable(target: str, commands: List[Union[str, Command]], secret: str = "",
     """
 
     commands.insert(0, Command(cmd="enable", input=secret))
-    return execute(target, commands, encoding, **kwargs)
+    return execute(target, commands, encoding, streaming, **kwargs)
 
 
 def configure(target: str, commands: List[Union[str, Command]],
@@ -84,6 +85,7 @@ def watch(target: str,
           command: Command,
           callback: Callable = None,
           encoding: Optional[str] = None,
+          streaming: bool = False,
           interval: Optional[int] = None,
           deadline: Optional[float] = None,
           exclude: bool = False,
@@ -131,7 +133,7 @@ def watch(target: str,
     check = start
 
     while (check - deadline) < start:
-        response = execute(target, [command], encoding, **kwargs)
+        response = execute(target, [command], encoding, streaming, **kwargs)
         match = re.search(condition, str(response))
 
         if exclude and not match:
@@ -151,6 +153,7 @@ def watch(target: str,
 async def aexecute(target: str,
                    commands: List[Union[str, Command]],
                    encoding: Optional[str] = None,
+                   streaming: bool = False,
                    auth: Optional[Auth] = None,
                    cert: Optional[Certificate] = None,
                    verify: Optional[bool] = None,
@@ -170,7 +173,7 @@ async def aexecute(target: str,
     """
 
     async with AsyncSession(auth=auth, cert=cert, verify=verify) as sess:
-        return await sess.call(target, commands, encoding=encoding, **kwargs)
+        return await sess.call(target, commands, encoding, streaming, **kwargs)
 
 
 async def aenable(target: str, commands: List[Union[str, Command]], secret: str = "",
@@ -217,6 +220,7 @@ async def awatch(target: str,
                  command: Union[str, Command],
                  callback: Callable = None,
                  encoding: Optional[str] = None,
+                 streaming: bool = False,
                  interval: Optional[int] = None,
                  deadline: Optional[float] = None,
                  exclude: bool = False,
@@ -265,7 +269,7 @@ async def awatch(target: str,
     check = start
 
     while (check - deadline) < start:
-        response = await aexecute(target, [command], encoding, **kwargs)
+        response = await aexecute(target, [command], encoding, streaming, **kwargs)
 
         match = re.search(condition, str(response))
 
