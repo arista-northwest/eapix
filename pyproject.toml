@@ -1,3 +1,21 @@
+[tool.poetry]
+name = "eapi"
+version = "0.7.0"
+description = ""
+authors = ["Jesse Mather <jmather@arista.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+httpx = "^0.12.0"
+click = "^8.1"
+
+[tool.poetry.dev-dependencies]
+pytest = "^8.0.0"
+
+[tool.poetry.scripts]
+eapi-cli = "eapi.cli:main"
+
 [build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta:__legacy__"
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
