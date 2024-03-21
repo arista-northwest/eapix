@@ -6,13 +6,13 @@ from sys import version
 import httpx
 import pytest
 
-from eapi.util import prepare_request, asdict
+from eapix.util import prepare_request, asdict
 
-import eapi
-import eapi.exceptions
-import eapi.sessions
-from eapi.messages import Target, Response
-from eapi.sessions import Session, AsyncSession
+import eapix
+import eapix.exceptions
+import eapix.sessions
+from eapix.messages import Target, Response
+from eapix.sessions import Session, AsyncSession
 
 def test_login(session, server, auth):
     target = str(server.url)
@@ -23,10 +23,10 @@ def test_login(session, server, auth):
 def test_login_err(server):
     target = Target.from_string(str(server.url))
     with Session() as sess:
-        with pytest.raises(eapi.exceptions.EapiAuthenticationFailure):
+        with pytest.raises(eapix.exceptions.EapiAuthenticationFailure):
             sess.login(target, ("b4d", "p4ss"))
 
-        with pytest.raises(httpx.HTTPError):
+        with pytest.raises(eapix.exceptions.EapiAuthenticationFailure):
             sess._call(Target.from_string(target).url + "/login", data={})
 
 
@@ -38,7 +38,7 @@ def test_call(session, server, auth):
 def test_http_error(session, server):
     target = str(server.url)
     t = Target.from_string(target)
-    with pytest.raises(eapi.exceptions.EapiPathNotFoundError):
+    with pytest.raises(eapix.exceptions.EapiPathNotFoundError):
         session._call(t.url + "/badpath", {})
 
 
@@ -65,14 +65,14 @@ def test_jsonrpc_error(session, server):
 
 def test_context(server, auth):
     target = str(server.url)
-    with eapi.Session() as sess:
+    with eapix.Session() as sess:
         sess.login(target, auth=auth)
         sess.call(target, ["show hostname"])
 
 
 def test_ssl_verify(starget, cert):
     sess = Session(cert=cert)
-    with pytest.raises(eapi.exceptions.EapiError):
+    with pytest.raises(eapix.exceptions.EapiError):
         sess.call(starget, ["show hostname"])
 
 def test_logout(server, auth):
@@ -88,7 +88,7 @@ def test_logout_noexist(session):
 
 def test_unauth(session, server):
     target = str(server.url)
-    with pytest.raises(eapi.exceptions.EapiAuthenticationFailure):
+    with pytest.raises(eapix.exceptions.EapiAuthenticationFailure):
         session.login(target, auth=("l33t", "h3x0r"))
 
 

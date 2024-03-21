@@ -9,14 +9,14 @@ from typing import Dict, List, Optional, Union, Type
 
 import httpx
 
-import eapi.environments
+import eapix.environments
 
-from eapi.util import prepare_request, asdict
-from eapi.exceptions import EapiAuthenticationFailure, EapiError, \
+from eapix.util import prepare_request, asdict
+from eapix.exceptions import EapiAuthenticationFailure, EapiError, \
     EapiPathNotFoundError, EapiTimeoutError
-from eapi.types import Auth, Certificate, Command
+from eapix.types import Auth, Certificate, Command
 
-from eapi.messages import Response, Target
+from eapix.messages import Response, Target
 
 class BaseSession(object):
 
@@ -28,7 +28,7 @@ class BaseSession(object):
                  **kwargs):
 
         if verify is None:
-            verify = eapi.environments.SSL_VERIFY
+            verify = eapix.environments.SSL_VERIFY
 
         # use a httpx Session to manage state
         self._session = klass(
@@ -114,10 +114,10 @@ class Session(BaseSession):
         response = None
 
         if "timeout" not in options:
-            options["timeout"] = eapi.environments.EAPI_DEFAULT_TIMEOUT
+            options["timeout"] = eapix.environments.EAPI_DEFAULT_TIMEOUT
 
         try:
-            response = self._session.post(url, json.dumps(data), **options)
+            response = self._session.post(url, data=json.dumps(data), **options)
         except httpx.HTTPError as exc:
             raise EapiError(str(exc))
 
@@ -220,10 +220,10 @@ class AsyncSession(BaseSession):
         response = None
 
         if "timeout" not in options:
-            options["timeout"] = eapi.environments.EAPI_DEFAULT_TIMEOUT
+            options["timeout"] = eapix.environments.EAPI_DEFAULT_TIMEOUT
 
         try:
-            response = await self._session.post(url, content=json.dumps(data),
+            response = await self._session.post(url, data=json.dumps(data),
                                                 **options)
         except httpx.HTTPError as exc:
             raise EapiError(str(exc))

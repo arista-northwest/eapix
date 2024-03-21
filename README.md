@@ -1,4 +1,4 @@
-EAPI-PY: HTTPx/Asyncio EAPI library
+eAPIx: HTTPx/Asyncio EAPI library
 ===================================
 
 Features:

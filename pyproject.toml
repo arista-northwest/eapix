@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "eapi"
+name = "eapix"
 version = "0.7.0"
 description = ""
 authors = ["Jesse Mather <jmather@arista.com>"]
@@ -12,9 +12,10 @@ click = "^8.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^8.0.0"
+pytest-asyncio = "^0.23"
 
 [tool.poetry.scripts]
-eapi-cli = "eapi.cli:main"
+eapix = "eapix.cli:main"
 
 [build-system]
 requires = ["poetry-core"]

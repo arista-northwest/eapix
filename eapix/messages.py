@@ -10,11 +10,11 @@ from pprint import pformat
 from typing import List, Union, Optional
 #from typing_extensions import TypedDict
 
-import eapi.sessions
+import eapix.sessions
 
-from eapi.environments import EAPI_DEFAULT_TRANSPORT
-from eapi.types import Command, Error
-from eapi.util import zpad, indent, asdict
+from eapix.environments import EAPI_DEFAULT_TRANSPORT
+from eapix.types import Command, Error
+from eapix.util import zpad, indent, asdict
 
 _TRANSPORTS = {"http": 80, "https": 443}
 _TARGET_RE = re.compile(r"^(?:(?P<transport>\w+)\:\/\/)?"

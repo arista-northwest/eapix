@@ -8,9 +8,9 @@ import time
 
 from typing import Callable, Iterator, List, Optional, Union
 
-from eapi.types import Auth, Certificate, Command
-from eapi.messages import Response
-from eapi import Session, AsyncSession
+from eapix.types import Auth, Certificate, Command
+from eapix.messages import Response
+from eapix import Session, AsyncSession
 
 NEVER_RE = r'(?!x)x'
 
@@ -226,7 +226,7 @@ async def awatch(target: str,
                  exclude: bool = False,
                  condition: Optional[str] = None,
 
-                 **kwargs) -> None:
+                 **kwargs) -> Response:
 
     """Watch a command until deadline or condition matches (async version)
 
@@ -251,6 +251,8 @@ async def awatch(target: str,
     :return: :class:`Response <Response>` object
     :rtype: eapi.messages.Response
     """
+
+    response: Response
 
     matched: bool = False
 
@@ -285,3 +287,5 @@ async def awatch(target: str,
 
         time.sleep(interval)
         check = time.time()
+
+    return response

@@ -3,7 +3,7 @@
 # Arista Networks, Inc. Confidential and Proprietary.
 import os
 
-from eapi.types import Timeout
+from eapix.types import Timeout
 
 # Specifies the default result encoding.  The alternative is 'text'
 EAPI_DEFAULT_ENCODING: str = os.environ.get("EAPI_DEFAULT_ENCODING", "json")

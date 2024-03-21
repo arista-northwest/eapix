@@ -7,9 +7,9 @@ from dataclasses import dataclass
 from typing import Tuple, Optional
 import pytest
 
-import eapi.sessions
-import eapi.environments
-from eapi.util import indent, prepare_request, zpad, asdict
+import eapix.sessions
+import eapix.environments
+from eapix.util import indent, prepare_request, zpad, asdict
 
 
 @pytest.mark.parametrize("text", [
@@ -45,7 +45,7 @@ def test_prepare_request(request_):
         assert len(command.cmd) > 0
 
     p = prepare_request(["show stuff"])
-    assert p.params.format == eapi.environments.EAPI_DEFAULT_ENCODING
+    assert p.params.format == eapix.environments.EAPI_DEFAULT_ENCODING
 
 
 def test_zpad():

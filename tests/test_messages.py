@@ -4,7 +4,7 @@
 
 import pytest
 
-from eapi.messages import Response, ResponseElem, Target, TextResult, JsonResult
+from eapix.messages import Response, ResponseElem, Target, TextResult, JsonResult
 
 def test_text_result(text_response):
     r = TextResult(text_response[-1]["result"][1]["output"])

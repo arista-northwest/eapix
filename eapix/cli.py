@@ -4,14 +4,14 @@
 
 import sys
 
-from eapi.exceptions import EapiError
+from eapix.exceptions import EapiError
 import click
 
-import eapi
-import eapi.exceptions
-import eapi.environments
+import eapix
+import eapix.exceptions
+import eapix.environments
 
-from eapi import util
+from eapix import util
 
 
 @click.group()
@@ -56,13 +56,13 @@ def execute(ctx, commands):
     verify = ctx.obj["verify"]
 
     try:
-        resp = eapi.execute(target, commands,
+        resp = eapix.execute(target, commands,
                             encoding=encoding,
                             streaming=streaming,
                             auth=auth,
                             cert=cert,
                             verify=verify)
-    except eapi.exceptions.EapiError as err:
+    except eapix.exceptions.EapiError as err:
         sys.exit(str(err))
     
     if encoding == "json":
@@ -97,7 +97,7 @@ def watch(ctx, command, interval, deadline, exclude, condition):
             print(response[0])
 
     try:
-        eapi.watch(target, command,
+        eapix.watch(target, command,
                 callback=_cb,
                 encoding=encoding,
                 streaming=streaming,
@@ -108,5 +108,5 @@ def watch(ctx, command, interval, deadline, exclude, condition):
                 auth=auth,
                 cert=cert,
                 verify=verify)
-    except eapi.EapiError as err:
+    except eapix.EapiError as err:
         sys.exit(str(err))

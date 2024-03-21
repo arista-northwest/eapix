@@ -14,7 +14,7 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath(".."))
 
-import eapi
+import eapix
 
 # -- Project information -----------------------------------------------------
 
@@ -23,8 +23,8 @@ copyright = '2020, Arista Inc'
 author = 'Jesse Mather'
 
 # The full version, including alpha/beta/rc tags
-version = eapi.__version__
-release = eapi.__version__
+version = eapix.__version__
+release = eapix.__version__
 
 source_suffix = ".rst"
 

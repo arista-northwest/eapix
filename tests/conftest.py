@@ -5,14 +5,17 @@
 import os
 import sys
 
+from dataclasses import dataclass
+
 import pytest
 
-import eapi.environments
+import eapix.environments
 
-from eapi.util import prepare_request
-from eapi.types import Certificate, Request
-from eapi.sessions import Session
-from eapi.messages import _TARGET_RE, Target, Response
+
+from eapix.util import prepare_request
+from eapix.types import Certificate, Request
+from eapix.sessions import Session
+from eapix.messages import _TARGET_RE, Target, Response
 
 
 sys.path.insert(0, os.path.abspath("."))
@@ -27,7 +30,15 @@ EAPI_CLIENT_KEY = os.environ.get('EAPI_CLIENT_KEY')
 
 # eapi.environments.SSL_WARNINGS = False
 
-from tests.server import server #, https_server
+@dataclass
+class Server:
+    url: str
+
+
+# from tests.server import server #, https_server
+@pytest.fixture(scope="session")
+def server():
+    return Server(url=EAPI_TARGET)
 
 @pytest.fixture
 def auth():

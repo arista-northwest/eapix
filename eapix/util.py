@@ -6,9 +6,9 @@ import os
 import uuid
 import dataclasses
 from typing import Optional, Union, List
-from eapi.types import Command, Params, Request
+from eapix.types import Command, Params, Request
 
-from eapi.environments import EAPI_DEFAULT_ENCODING
+from eapix.environments import EAPI_DEFAULT_ENCODING
 
 def clear_screen() -> None:
     if os.name == 'nt':
