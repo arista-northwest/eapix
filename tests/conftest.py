@@ -24,21 +24,22 @@ sys.path.insert(0, os.path.abspath("."))
 EAPI_TARGET = os.environ.get('EAPI_TARGET', "localhost:8000")
 EAPI_STARGET = os.environ.get('EAPI_STARGET', "localhost:8001")
 EAPI_USER = os.environ.get('EAPI_USER', "admin")
-EAPI_PASSWORD = os.environ.get('EAPI_PASSWORD', "admin")
+EAPI_PASSWORD = os.environ.get('EAPI_PASSWORD', "")
 EAPI_CLIENT_CERT = os.environ.get('EAPI_CLIENT_CERT')
 EAPI_CLIENT_KEY = os.environ.get('EAPI_CLIENT_KEY')
 
 # eapi.environments.SSL_WARNINGS = False
 
-@dataclass
-class Server:
-    url: str
+if EAPI_TARGET:
+    @dataclass
+    class Server:
+        url: str
 
-
-# from tests.server import server #, https_server
-@pytest.fixture(scope="session")
-def server():
-    return Server(url=EAPI_TARGET)
+    @pytest.fixture(scope="session")
+    def server():
+        return Server(url=EAPI_TARGET)
+else:
+    from tests.server import server #, https_server
 
 @pytest.fixture
 def auth():

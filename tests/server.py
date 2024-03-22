@@ -20,23 +20,6 @@ from httpx import URL
 
 import pytest
 
-
-def _bash(encoding, *args):
-    cmd = args[0].split()
-    completed = subprocess.run(cmd, stdout=subprocess.PIPE)
-    out = completed.stdout.decode('utf-8')
-    responses = {
-        "json": {
-            "messages": [out]
-        },
-        "text": {
-            "output": out
-        }
-    }
-
-    return responses[encoding]
-
-
 def _show_clock(encoding, *args):
     now = datetime.datetime.utcnow()
     responses = {
@@ -119,8 +102,7 @@ def _show_bogus(encoding, *args):
 CMDS = [
     (re.compile(r"show version"), _show_version),
     (re.compile(r"show clock"), _show_clock),
-    (re.compile(r"show hostname"), _show_hostname),
-    (re.compile(r"bash timeout \d+ (.*)"), _bash)
+    (re.compile(r"show hostname"), _show_hostname)
 ]
 
 

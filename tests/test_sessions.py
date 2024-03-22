@@ -53,16 +53,6 @@ def test_jsonrpc_error(session, server):
 
     assert rresp.code < 0
 
-
-# def test_call_timeout(session, server):
-#     target = str(server.url)
-#     with pytest.raises(eapi.exceptions.EapiTimeoutError):
-#         session.call(target, ["bash timeout 30 sleep 30"], timeout=1)
-
-#     with pytest.raises(eapi.exceptions.EapiError):
-#         session.call("bogus", ["bash timeout 30 sleep 30"], timeout=1)
-
-
 def test_context(server, auth):
     target = str(server.url)
     with eapix.Session() as sess:

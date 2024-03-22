@@ -18,9 +18,9 @@ import eapix
 
 # -- Project information -----------------------------------------------------
 
-project = 'eAPI-py'
-copyright = '2020, Arista Inc'
-author = 'Jesse Mather'
+project = 'eAPIx'
+copyright = '2024, Arista Inc'
+author = 'Jesse Mather <jmather@arista.com>'
 
 # The full version, including alpha/beta/rc tags
 version = eapix.__version__
