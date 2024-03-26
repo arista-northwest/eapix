@@ -2,29 +2,46 @@
 # Copyright (c) 2020 Arista Networks, Inc.  All rights reserved.
 # Arista Networks, Inc. Confidential and Proprietary.
 
+import asyncio
 import sys
 
 from eapix.exceptions import EapiError
 import click
 
-import eapix
+import eapix.version
 import eapix.exceptions
 import eapix.environments
+import eapix.types
 
 from eapix import util
 
 
 @click.group()
-@click.argument("target")
-@click.option("--encoding", "-e", default="text")
+@click.option("--targets", "-t", multiple=True, help="specifies targets")
+@click.option("--format", "-e", default="text")
+@click.option("--auto-complete", is_flag=True)
+@click.option("--expand_aliases", is_flag=True)
+@click.option("--include-error-detail", is_flag=True)
 @click.option("--streaming", "-s", is_flag=True, help="enable streaming mode")
 @click.option("--username", "-u", default="admin", help="Username (default: admin")
 @click.option("--password", "-p", default="", help="Username (default: <blank>")
 @click.option("--cert", help="Client certificate file")
 @click.option("--key", help="Private key file name")
 @click.option("--verify", is_flag=True, help="verify SSL cert")
+@click.version_option(eapix.version.__version__)
 @click.pass_context
-def main(ctx, target, encoding, streaming, username, password, cert, key, verify):
+def main(ctx,
+         targets,
+         format,
+         auto_complete,
+         expand_aliases,
+         include_error_detail,
+         streaming,
+         username,
+         password,
+         cert,
+         key,
+         verify):
     pair = None
     auth = None
 
@@ -34,42 +51,68 @@ def main(ctx, target, encoding, streaming, username, password, cert, key, verify
     if not key:
         auth = (username, password)
 
+    eapi_options = eapix.types.EapiOptions(
+        format=format,
+        streaming=streaming,
+        auto_complete=auto_complete,
+        expand_aliases=expand_aliases,
+        include_error_detail=include_error_detail
+    )
     ctx.obj = {
-        'target': target,
-        'encoding': encoding,
-        'streaming': streaming,
+        'targets': targets,
+        'options': eapi_options,
         'auth': auth,
         'cert': pair,
         'verify': verify,
     }
 
-
 @main.command()
 @click.argument("commands", nargs=-1, required=True)
 @click.pass_context
 def execute(ctx, commands):
-    target = ctx.obj["target"]
-    encoding = ctx.obj["encoding"]
-    streaming = ctx.obj["streaming"]
+    targets = ctx.obj["targets"]
+    options = ctx.obj["options"]
     auth = ctx.obj["auth"]
     cert = ctx.obj["cert"]
     verify = ctx.obj["verify"]
 
-    try:
-        resp = eapix.execute(target, commands,
-                            encoding=encoding,
-                            streaming=streaming,
-                            auth=auth,
-                            cert=cert,
-                            verify=verify)
-    except eapix.exceptions.EapiError as err:
-        sys.exit(str(err))
-    
-    if encoding == "json":
-        print(resp.json)
-    else:
-        print(resp.pretty)
+    async def _consumer(channel):
+        while True:
+            rsp = await channel.get()
 
+            if rsp is None:
+                break
+
+            if options.format == "json":
+                print(rsp.json)
+            else:
+                print(rsp.pretty)
+  
+    async def _run(channel):
+        tasks = []
+
+        asyncio.create_task(_consumer(channel))
+
+        for target in targets:
+            producer = asyncio.create_task(
+                eapix.aexecute(
+                    channel,
+                    target,
+                    commands,
+                    options,
+                    auth=auth,
+                    cert=cert,
+                    verify=verify
+                )
+            )
+            tasks.append(producer)
+
+        await asyncio.gather(*tasks)
+        # shutdown the channel
+        await channel.put(None)
+
+    channel = asyncio.Queue()
+    asyncio.run(_run(channel))
 
 @main.command()
 @click.argument("command", nargs=1, required=True)
@@ -81,14 +124,13 @@ def execute(ctx, commands):
 def watch(ctx, command, interval, deadline, exclude, condition):
 
     target = ctx.obj["target"]
-    encoding = ctx.obj["encoding"]
-    streaming = ctx.obj["streaming"]
+    options = ctx.obj["options"]
     auth = ctx.obj["auth"]
     cert = ctx.obj["cert"]
     verify = ctx.obj["verify"]
 
     def _cb(response, matched):
-        if encoding == "json":
+        if options.format == "json":
             print(response.json)
         else:
             util.clear_screen()
@@ -97,16 +139,16 @@ def watch(ctx, command, interval, deadline, exclude, condition):
             print(response[0])
 
     try:
-        eapix.watch(target, command,
-                callback=_cb,
-                encoding=encoding,
-                streaming=streaming,
-                interval=interval,
-                deadline=deadline,
-                exclude=exclude,
-                condition=condition,
-                auth=auth,
-                cert=cert,
-                verify=verify)
+        eapix.watch(target,
+                    command,
+                    options,
+                    callback=_cb,
+                    interval=interval,
+                    deadline=deadline,
+                    exclude=exclude,
+                    condition=condition,
+                    auth=auth,
+                    cert=cert,
+                    verify=verify)
     except eapix.EapiError as err:
         sys.exit(str(err))

@@ -10,11 +10,9 @@ from pprint import pformat
 from typing import List, Union, Optional
 #from typing_extensions import TypedDict
 
-import eapix.sessions
-
 from eapix.environments import EAPI_DEFAULT_TRANSPORT
 from eapix.types import Command, Error
-from eapix.util import zpad, indent, asdict
+from eapix.util import zpad, indent, asdict_pruned
 
 _TRANSPORTS = {"http": 80, "https": 443}
 _TARGET_RE = re.compile(r"^(?:(?P<transport>\w+)\:\/\/)?"
@@ -79,7 +77,7 @@ class ResponseElem(object):
             result = str(self.result)
 
         return {
-            "command": asdict(self.command),
+            "command": self.command,
             "result": result
         }
 
@@ -145,7 +143,7 @@ class Response(Mapping):
         text += "responses:\n"
 
         for elem in self.elements:
-            text += "- command: %s\n" % elem.command.cmd
+            text += "- command: %s\n" % elem.command["cmd"]
             text += "  result: |\n"
             text += indent("    ", elem.result.pretty)
             text += "\n"
@@ -155,8 +153,8 @@ class Response(Mapping):
     def from_rpc_response(cls, target, request, response):
         """Convert JSON response to a `Response` object"""
         
-        encoding = request.params.format
-        commands = request.params.cmds
+        encoding = request["params"]["format"]
+        commands = request["params"]["cmds"]
 
         error = Error(code=0, message="")
 

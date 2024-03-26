@@ -6,7 +6,7 @@ from sys import version
 import httpx
 import pytest
 
-from eapix.util import prepare_request, asdict
+from eapix.util import prepare_request, asdict_pruned
 
 import eapix
 import eapix.exceptions
@@ -46,8 +46,8 @@ def test_jsonrpc_error(session, server):
     target = str(server.url)
     tgt = Target.from_string(target)
     req = prepare_request(["show hostname"])
-    req.method = "bogus"
-    resp = session._call(tgt.url + "/command-api", asdict(req))
+    req["method"] = "bogus"
+    resp = session._call(tgt.url + "/command-api", req)
 
     rresp = Response.from_rpc_response(tgt, req, resp.json())
 
@@ -55,7 +55,7 @@ def test_jsonrpc_error(session, server):
 
 def test_context(server, auth):
     target = str(server.url)
-    with eapix.Session() as sess:
+    with Session() as sess:
         sess.login(target, auth=auth)
         sess.call(target, ["show hostname"])
 
@@ -103,7 +103,7 @@ async def test_async(server, auth):
         tasks = []
         for t in targets:
             for c in commands:
-                tasks.append(sess.call(t, [c], encoding="text"))
+                tasks.append(sess.call(t, [c]))
 
         responses = await asyncio.gather(*tasks)
 

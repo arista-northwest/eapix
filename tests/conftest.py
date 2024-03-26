@@ -6,14 +6,11 @@ import os
 import sys
 
 from dataclasses import dataclass
-
+from typing import Dict
 import pytest
 
-import eapix.environments
-
-
 from eapix.util import prepare_request
-from eapix.types import Certificate, Request
+from eapix.types import Certificate, EapiOptions
 from eapix.sessions import Session
 from eapix.messages import _TARGET_RE, Target, Response
 
@@ -91,10 +88,10 @@ def starget(target):
 def commands():
     return ["show hostname", "show version"]
 
-
 @pytest.fixture(params=["json", "text"])
-def request_(commands, request) -> Request:
-    return prepare_request(commands, request.param)
+def request_(commands, request) -> Dict:
+    return prepare_request(commands,  EapiOptions(
+        format=request.param))
 
 @pytest.fixture()
 def httpx_404(): ...
@@ -104,7 +101,7 @@ def httpx_401(): ...
 
 @pytest.fixture()
 def text_response():
-    request = prepare_request(["show hostname", "show version"], "text")
+    request = prepare_request(["show hostname", "show version"])
     response = {
         'jsonrpc': '2.0',
         'id': '45e8f5f4-7620-43c9-8407-da0a03bbcc50',
@@ -133,7 +130,9 @@ def text_response():
 
 @pytest.fixture()
 def json_response():
-    request = prepare_request(["show hostname", "show version"], "json")
+    request = prepare_request(["show hostname", "show version"], EapiOptions(
+        format="json"
+    ))
     response = {
         'jsonrpc': '2.0',
         'id': '532c456f-0b5a-4e20-885b-0e838aa1bb57',
@@ -165,7 +164,9 @@ def json_response():
 
 @pytest.fixture()
 def errored_response():
-    request = prepare_request(["show hostname", "show bogus"], "json")
+    request = prepare_request(["show hostname", "show bogus"], EapiOptions(
+        format="json"
+    ))
     response = {
         'jsonrpc': '2.0',
         'id': '6585432e-2214-43d8-be6b-06bf68617aba',
@@ -191,7 +192,7 @@ def errored_response():
 
 @pytest.fixture()
 def errored_text_response():
-    request = prepare_request(["show hostname", "show bogus"], "text")
+    request = prepare_request(["show hostname", "show bogus"], EapiOptions())
     response = {
         'jsonrpc': '2.0',
         'id': '072cdc16-be82-4f98-9c42-549a954b5881',

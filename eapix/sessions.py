@@ -5,16 +5,25 @@
 import json
 import warnings
 
-from typing import Dict, List, Optional, Union, Type
+from typing import Dict, Optional, Union, Type
 
 import httpx
 
 import eapix.environments
+from eapix.types import EapiOptions
 
-from eapix.util import prepare_request, asdict
-from eapix.exceptions import EapiAuthenticationFailure, EapiError, \
-    EapiPathNotFoundError, EapiTimeoutError
-from eapix.types import Auth, Certificate, Command
+from eapix.util import prepare_request
+
+from eapix.exceptions import (
+    EapiAuthenticationFailure,
+    EapiError,
+    EapiPathNotFoundError)
+
+from eapix.types import (
+    Auth,
+    Certificate,
+    CommandList
+)
 
 from eapix.messages import Response, Target
 
@@ -117,7 +126,7 @@ class Session(BaseSession):
             options["timeout"] = eapix.environments.EAPI_DEFAULT_TIMEOUT
 
         try:
-            response = self._session.post(url, data=json.dumps(data), **options)
+            response = self._session.post(url, content=json.dumps(data), **options)
         except httpx.HTTPError as exc:
             raise EapiError(str(exc))
 
@@ -165,15 +174,16 @@ class Session(BaseSession):
 
         self._handle_login_response(target_, auth, resp)
 
-    def call(self, target: Union[str, Target], commands: List[Union[str, Command]],
-             encoding: Optional[str] = None, streaming: bool = False, **kwargs):
+    def call(self, target: Union[str, Target], commands: CommandList,
+             options: EapiOptions = EapiOptions(), **kwargs):
         """call commands to an eAPI target
 
         :param target: eAPI target (host, port)
         :param type: Target
         :param commands: List of `Command` objects
         :param type: list
-        :param encoding: response encoding 'json' or 'text' (default: json)
+        :param options: eapi options
+        :param type: EapiOptions
         :param **kwargs: other pass through `httpx` options
         :param type: dict
 
@@ -182,13 +192,13 @@ class Session(BaseSession):
         target_: Target = Target.from_string(target)
 
         # get session defaults (set at login)
-        options = self._eapi_sessions.get(target_.domain) or {}
-        options.update(kwargs)
+        httpx_args = self._eapi_sessions.get(target_.domain) or {}
+        httpx_args.update(kwargs)
 
-        request = prepare_request(commands, encoding, streaming)
+        request = prepare_request(commands, options)
 
         response = self._call(target_.url + "/command-api",
-                              data=asdict(request), **options)
+                              data=request, **httpx_args)
 
         return Response.from_rpc_response(target_, request, response.json())
 
@@ -223,7 +233,7 @@ class AsyncSession(BaseSession):
             options["timeout"] = eapix.environments.EAPI_DEFAULT_TIMEOUT
 
         try:
-            response = await self._session.post(url, data=json.dumps(data),
+            response = await self._session.post(url, content=json.dumps(data),
                                                 **options)
         except httpx.HTTPError as exc:
             raise EapiError(str(exc))
@@ -271,15 +281,16 @@ class AsyncSession(BaseSession):
         if self.logged_in(target):
             await self._call(target_.url + "/logout", data={})
 
-    async def call(self, target: Union[str, Target], commands: List[Union[str, Command]],
-                   encoding: Optional[str] = None, streaming: bool = False, **kwargs):
+    async def call(self, target: Union[str, Target], commands: CommandList,
+                   options: EapiOptions = EapiOptions(), **kwargs):
         """call commands to an eAPI target
 
         :param target: eAPI target (host, port)
         :param type: Target
         :param commands: List of `Command` objects
         :param type: list
-        :param encoding: response encoding 'json' or 'text' (default: json)
+        :param options: eapi options
+        :param type: EapiOptions
         :param **kwargs: other pass through `httpx` options
         :param type: dict
 
@@ -288,12 +299,12 @@ class AsyncSession(BaseSession):
         target_: Target = Target.from_string(target)
 
         # get session defaults (set at login)
-        options = self._eapi_sessions.get(target_.domain) or {}
-        options.update(kwargs)
+        httpx_args = self._eapi_sessions.get(target_.domain) or {}
+        httpx_args.update(kwargs)
 
-        request = prepare_request(commands, encoding, streaming)
+        request = prepare_request(commands, options)
 
         response = await self._call(target_.url + "/command-api",
-                                    data=asdict(request), **options)
+                                    data=request, **httpx_args)
 
         return Response.from_rpc_response(target_, request, response.json())

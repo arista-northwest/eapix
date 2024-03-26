@@ -3,7 +3,9 @@
 # Arista Networks, Inc. Confidential and Proprietary.
 
 from typing import List, Optional, Tuple, Union
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass
+
+from eapix.environments import EAPI_DEFAULT_FORMAT
 
 @dataclass
 class BaseType:
@@ -20,33 +22,19 @@ class Command(BaseType):
     input: str = ""
 
 @dataclass
-class Params(BaseType):
-    cmds: List[Union[str, Command]]
+class EapiOptions(BaseType):
     version: int = 1
-    format: str = 'text'
+    format: str = EAPI_DEFAULT_FORMAT
     timestamps: Optional[bool] = None
-    autoComplete: Optional[bool] = None
-    expandAliases: Optional[bool] = None
-    includeErrorDetail: Optional[bool] = None
+    auto_complete: Optional[bool] = None
+    expand_aliases: Optional[bool] = None
+    include_error_detail: Optional[bool] = None
     streaming: Optional[bool] = None
 
-@dataclass
-class Request(BaseType):
-    params: Params
-    id: str = ""
-    jsonrpc: str = "2.0"
-    method: str = "runCmds"
-    streaming: bool = False # eAPI hack
+CommandList = List[Union[str, Command]]
 
 Auth = Tuple[str, Optional[str]]
 
 Certificate = Optional[Union[str, Tuple[str, str], Tuple[str, str, str]]]
 
 Timeout = Union[None, float, Tuple[float, float, float, float]]
-
-# RequestsOptions = TypedDict('RequestsOptions', {
-#     'auth': Auth,
-#     'timeout': Timeout,
-#     'cert': Certificate,
-#     'verify': bool
-# }, total=False)

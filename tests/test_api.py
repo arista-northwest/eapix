@@ -7,6 +7,8 @@ import asyncio
 import pytest
 
 import eapix
+import eapix.api
+from eapix.types import EapiOptions
 from eapix.messages import Response
 
 # from tests.conftest import EAPI_TARGET
@@ -23,12 +25,14 @@ def test_enable(server, commands, auth):
 
 def test_execute_text(server, commands, auth):
     target = str(server.url)
-    eapix.execute(target, commands=commands, auth=auth, encoding="text")
+    eapix.execute(target, commands, auth=auth)
 
 def test_execute_jsonerr(server, auth):
     target = str(server.url)
     response = eapix.execute(
-        target, commands=["show hostname", "show bogus"], auth=auth, encoding="json")
+        target, 
+        ["show hostname", "show bogus"],
+        EapiOptions(format="json"), auth=auth)
 
     assert response.code > 0
 
@@ -40,7 +44,6 @@ def test_execute_err(server, auth):
             "show bogus",
             "show running-config"
         ],
-        encoding="text",
         auth=auth
     )
     assert response.code > 0
@@ -64,35 +67,39 @@ def test_watch(server, auth):
     def _cb(r, matched: bool):
         assert isinstance(r, eapix.messages.Response)
     
-    eapix.watch(target, "show clock", callback=_cb, auth=auth, encoding="text", deadline=10)
+    eapix.watch(target, "show clock", callback=_cb, auth=auth, deadline=10)
     
 
 @pytest.mark.asyncio
 async def test_aexecute(server, commands, auth):
+    channel = asyncio.Queue()
     target = str(server.url)
-    resp = await eapix.aexecute(target, commands, auth=auth)
+    await eapix.aexecute(channel, target, commands, auth=auth)
 
 @pytest.mark.asyncio
 async def test_awatch(server, auth):
+    channel = asyncio.Queue()
+
     target = str(server.url)
     tasks = []
 
-    async def _cb(r, match: bool):
-        assert isinstance(r, eapix.messages.Response)
-
-    for c in ["show clock", "show hostname"]:
+    for cmd in ["show clock"]:
         tasks.append(
-            eapix.awatch(target, c, callback=_cb, auth=auth, encoding="text", deadline=10)
+            eapix.awatch(channel, target, cmd, EapiOptions(format="text"), auth=auth, deadline=2)
         )
     
-    responses = await asyncio.gather(*tasks)
+    tasks.append(async_consumer(channel))
+    
+    await asyncio.gather(*tasks)
 
-    assert len(responses) == 2
-
-    for rsp in responses:
-        assert isinstance(rsp, Response)
-
-
+async def async_consumer(channel):
+    while True:
+        rsp = await channel.get()
+        # break on stop signal
+        if rsp is None:
+            break
+        
+        assert isinstance(rsp[0], eapix.messages.Response)
 
     
 

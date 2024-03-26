@@ -5,17 +5,14 @@
 import os
 import uuid
 import dataclasses
-from typing import Optional, Union, List
-from eapix.types import Command, Params, Request
-
-from eapix.environments import EAPI_DEFAULT_ENCODING
+from typing import Optional, Union, List, Dict
+from eapix.types import Command, CommandList, EapiOptions
 
 def clear_screen() -> None:
     if os.name == 'nt':
         os.system('cls')
     else:
         os.system('clear')
-
 
 def indent(spaces, text: str):
     indented = []
@@ -24,34 +21,61 @@ def indent(spaces, text: str):
 
     return "\n".join(indented)
 
+def prepare_commands(commands: CommandList) -> List[Dict[str, str]]:
+    prepared = []
 
-def prepare_request(commands: List[Union[str, Command]], 
-        encoding: Optional[str] = None, streaming: bool = False) -> Request:
-    #commands = prepare_cmd(commands)
-    request_id = str(uuid.uuid4())
+    for cmd in commands:
+        if isinstance(cmd, Command):
+            cmd = asdict_pruned(cmd)
+        elif isinstance(cmd, str):
+            cmd = {"cmd": cmd}
+        else:
+            raise ValueError(f"invalid type for command: {cmd}")
 
-    if not encoding:
-        encoding = EAPI_DEFAULT_ENCODING
+        prepared.append(cmd)
 
-    _commands = []
-    for c in commands:
-        if isinstance(c, str):
-            c = Command(cmd=c)
-        _commands.append(c)
+    return prepared
+
+def prepare_request(
+    commands: CommandList,
+    options: EapiOptions = EapiOptions(),
+    request_id: Optional[str] = None
+) -> Dict:
+
+    if not request_id:
+        request_id = str(uuid.uuid4())
+
+    req = {
+        "jsonrpc": "2.0",
+        "method": "runCmds",
+        "id": request_id
+    }
+
+    params = {
+        "cmds": prepare_commands(commands),
+        "version": options.version,
+        "format": options.format,
+    }
+
+    if options.streaming:
+        params["streaming"] = options.streaming
+        # eAPI hack, old versions expected it here
+        req["streaming"] = options.streaming
     
-    params = Params(
-        version = 1,
-        format = encoding,
-        cmds = _commands
-    )
+    if options.timestamps == True:
+        params["timestamps"] = options.timestamps
 
-    req: Request = Request(
-        jsonrpc = "2.0",
-        method = "runCmds",
-        params = params,
-        streaming = streaming,
-        id = request_id
-    )
+    if options.auto_complete == True:
+        params["autoComplete"] = options.auto_complete
+
+    if options.expand_aliases == True:
+        params["expand_aliases"] = options.expand_aliases
+
+    if options.include_error_detail == True:
+        params["include_error_detail"] = options.include_error_detail
+
+    req["params"] = params
+        
     return req
 
 
@@ -76,7 +100,7 @@ def pruned_dict(data):
 
     return pruned
 
-def asdict(data, prune=True):
+def asdict_pruned(data, prune=True):
     """Normal `asdict` but removes fields with None values"""
 
     factory = pruned_dict if prune else dict

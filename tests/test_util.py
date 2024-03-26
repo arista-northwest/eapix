@@ -3,14 +3,11 @@
 # Copyright (c) 2020 Arista Networks, Inc.  All rights reserved.
 # Arista Networks, Inc. Confidential and Proprietary.
 
-from dataclasses import dataclass
-from typing import Tuple, Optional
 import pytest
 
-import eapix.sessions
-import eapix.environments
-from eapix.util import indent, prepare_request, zpad, asdict
+from eapix.util import indent, zpad
 
+from pprint import pprint
 
 @pytest.mark.parametrize("text", [
     "a\nb\nc\nd\nf"
@@ -19,33 +16,12 @@ def test_indent(text):
     indent(" " * 10, text)
 
 
-# @pytest.mark.parametrize("cmd", [
-#     "show some stuff",
-#     {"cmd": "show secret stuff", "input": "s3c3rt"},
-#     ["show some stuff", {"cmd": "show secret stuff", "input": "s3c3rt"}]
-# ])
-# def test_prepare_cmd(cmd):
-#     commands = prepare_cmd(cmd)
-#     for cmd in commands:
-#         assert "cmd" in cmd
-#         assert "input" in cmd
-#         assert len(cmd["cmd"]) > 0
-
-
 def test_prepare_request(request_):
-
-    assert request_.jsonrpc == "2.0"
-    assert request_.method == "runCmds"
-    assert isinstance(request_.id, str)
-    assert request_.params.version == 1
-    assert request_.params.format in ("json", "text")
-    for command in request_.params.cmds:
-        # assert "cmd" in command
-        # assert "input" in command
-        assert len(command.cmd) > 0
-
-    p = prepare_request(["show stuff"])
-    assert p.params.format == eapix.environments.EAPI_DEFAULT_ENCODING
+    assert request_.get("jsonrpc") == "2.0"
+    assert request_.get("method") == "runCmds"
+    assert isinstance(request_.get("id"), str)
+    assert request_["params"]["version"] == 1
+    assert request_["params"]["format"] in ("json", "text")
 
 
 def test_zpad():
@@ -58,17 +34,4 @@ def test_zpad():
     with pytest.raises(ValueError):
         zpad(z[:], a[:], None)
 
-# @dataclass
-# class TestData:
-#     a: str
-#     b: str
-#     c: Optional[str] = None
-
-# def test_asdict():
-#     d = TestData("a", "b", "c")
-#     print(asdict(d))
-
-#     d = TestData("a", "b", None)
-
-#     print(asdict(d))
 
