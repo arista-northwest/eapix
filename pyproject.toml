@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "eapix"
-version = "0.7.1"
+version = "0.8.0"
 description = ""
 authors = ["Jesse Mather <jmather@arista.com>"]
 readme = "README.md"
