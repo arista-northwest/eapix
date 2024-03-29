@@ -9,7 +9,7 @@ from typing import Dict, Optional, Union, Type
 
 import httpx
 
-import eapix.environments
+import eapix.environment
 from eapix.types import EapiOptions
 
 from eapix.util import prepare_request
@@ -37,7 +37,7 @@ class BaseSession(object):
                  **kwargs):
 
         if verify is None:
-            verify = eapix.environments.SSL_VERIFY
+            verify = eapix.environment.SSL_VERIFY
 
         # use a httpx Session to manage state
         self._session = klass(
@@ -123,7 +123,7 @@ class Session(BaseSession):
         response = None
 
         if "timeout" not in options:
-            options["timeout"] = eapix.environments.EAPI_DEFAULT_TIMEOUT
+            options["timeout"] = eapix.environment.EAPI_DEFAULT_TIMEOUT
 
         try:
             response = self._session.post(url, content=json.dumps(data), **options)
@@ -230,7 +230,7 @@ class AsyncSession(BaseSession):
         response = None
 
         if "timeout" not in options:
-            options["timeout"] = eapix.environments.EAPI_DEFAULT_TIMEOUT
+            options["timeout"] = eapix.environment.EAPI_DEFAULT_TIMEOUT
 
         try:
             response = await self._session.post(url, content=json.dumps(data),

@@ -10,9 +10,9 @@ from pprint import pformat
 from typing import List, Union, Optional
 #from typing_extensions import TypedDict
 
-from eapix.environments import EAPI_DEFAULT_TRANSPORT
+from eapix.environment import EAPI_DEFAULT_TRANSPORT
 from eapix.types import Command, Error
-from eapix.util import zpad, indent, asdict_pruned
+from eapix.util import zpad, indent
 
 _TRANSPORTS = {"http": 80, "https": 443}
 _TARGET_RE = re.compile(r"^(?:(?P<transport>\w+)\:\/\/)?"
@@ -61,13 +61,6 @@ class ResponseElem(object):
     def __init__(self, command: Command,
                  result: Union[TextResult, JsonResult]):
         self.command = command
-        # self.input = ""
-        # if isinstance(self._command, str):
-        #     self.command = self._command
-        # else:
-        #     self.command = self._command.cmd
-        #     self.input = self._command.input
-
         self.result = result
 
     def to_dict(self):

@@ -4,8 +4,10 @@
 
 import os
 import uuid
-import dataclasses
-from typing import Optional, Union, List, Dict
+
+from dataclasses import asdict
+from typing import Optional, Union
+#from _typeshed import DataclassInstance
 from eapix.types import Command, CommandList, EapiOptions
 
 def clear_screen() -> None:
@@ -14,14 +16,14 @@ def clear_screen() -> None:
     else:
         os.system('clear')
 
-def indent(spaces, text: str):
+def indent(spaces: str, text: str) -> str:
     indented = []
     for line in text.splitlines():
         indented.append(spaces + line)
 
     return "\n".join(indented)
 
-def prepare_commands(commands: CommandList) -> List[Dict[str, str]]:
+def prepare_commands(commands: list[str]|CommandList) -> list[dict[str, object]]:
     prepared = []
 
     for cmd in commands:
@@ -39,22 +41,21 @@ def prepare_commands(commands: CommandList) -> List[Dict[str, str]]:
 def prepare_request(
     commands: CommandList,
     options: EapiOptions = EapiOptions(),
-    request_id: Optional[str] = None
-) -> Dict:
+    request_id: Optional[str] = None) -> dict[str, object]:
 
     if not request_id:
         request_id = str(uuid.uuid4())
 
-    req = {
+    req: dict[str, object] = {
         "jsonrpc": "2.0",
         "method": "runCmds",
         "id": request_id
     }
 
-    params = {
+    params: dict[str, object] = {
         "cmds": prepare_commands(commands),
         "version": options.version,
-        "format": options.format,
+        "format": options.encoding,
     }
 
     if options.streaming:
@@ -79,8 +80,8 @@ def prepare_request(
     return req
 
 
-def zpad(keys, values, default=None):
-    """zips two lits and pads the second to match the first in length"""
+def zpad(keys: list[object], values: list[object], default: object = None) -> list[tuple[object, object]]:
+    """zips two lists and pads the second to match the first in length"""
 
     keys_len = len(keys)
     values_len = len(values)
@@ -90,9 +91,9 @@ def zpad(keys, values, default=None):
 
     values += [default] * (keys_len - values_len)
 
-    return zip(keys, values)
+    return list(zip(keys, values))
 
-def pruned_dict(data):
+def pruned_dict(data: list[tuple[str, object]]) -> dict[str, object]:
     pruned = {}
     for key, val in data:
         if val is not None:
@@ -100,10 +101,8 @@ def pruned_dict(data):
 
     return pruned
 
-def asdict_pruned(data, prune=True):
-    """Normal `asdict` but removes fields with None values"""
+def asdict_pruned(data: object) -> dict[str, object]:
+    """Just like `asdict` but removes fields with `None` values"""
 
-    factory = pruned_dict if prune else dict
-
-    return dataclasses.asdict(data, dict_factory=factory)
+    return asdict(data, dict_factory=pruned_dict)
     

@@ -11,7 +11,6 @@ from eapix.api import (
     aexecute,
     awatch,
     configure,
-    enable,
     execute,
     watch
 )

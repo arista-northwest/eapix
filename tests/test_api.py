@@ -8,7 +8,6 @@ import pytest
 
 import eapix
 import eapix.api
-from eapix.types import EapiOptions
 from eapix.messages import Response
 
 # from tests.conftest import EAPI_TARGET
@@ -21,7 +20,7 @@ def test_execute(server, commands, auth):
 
 def test_enable(server, commands, auth):
     target = str(server.url)
-    eapix.enable(target, commands=commands, auth=auth, secret="s3cr3t")
+    eapix.execute(target, commands=commands, auth=auth, enable=True, secret="s3cr3t")
 
 def test_execute_text(server, commands, auth):
     target = str(server.url)
@@ -32,7 +31,7 @@ def test_execute_jsonerr(server, auth):
     response = eapix.execute(
         target, 
         ["show hostname", "show bogus"],
-        EapiOptions(format="json"), auth=auth)
+       encoding="json", auth=auth)
 
     assert response.code > 0
 
@@ -85,7 +84,7 @@ async def test_awatch(server, auth):
 
     for cmd in ["show clock"]:
         tasks.append(
-            eapix.awatch(channel, target, cmd, EapiOptions(format="text"), auth=auth, deadline=2)
+            eapix.awatch(channel, target, cmd, auth=auth, deadline=2)
         )
     
     tasks.append(async_consumer(channel))

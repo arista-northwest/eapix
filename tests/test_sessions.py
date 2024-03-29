@@ -10,9 +10,9 @@ from eapix.util import prepare_request, asdict_pruned
 
 import eapix
 import eapix.exceptions
-import eapix.sessions
+import eapix.session
 from eapix.messages import Target, Response
-from eapix.sessions import Session, AsyncSession
+from eapix.session import Session, AsyncSession
 
 def test_login(session, server, auth):
     target = str(server.url)

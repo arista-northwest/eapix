@@ -5,20 +5,18 @@
 import asyncio
 import sys
 
-from eapix.exceptions import EapiError
 import click
 
 import eapix.version
 import eapix.exceptions
-import eapix.environments
+import eapix.environment
 import eapix.types
 
 from eapix import util
 
-
 @click.group()
 @click.option("--targets", "-t", multiple=True, help="specifies targets")
-@click.option("--format", "-e", default="text")
+@click.option("--encoding", "-e", default="text")
 @click.option("--auto-complete", is_flag=True)
 @click.option("--expand_aliases", is_flag=True)
 @click.option("--include-error-detail", is_flag=True)
@@ -32,7 +30,7 @@ from eapix import util
 @click.pass_context
 def main(ctx,
          targets,
-         format,
+         encoding,
          auto_complete,
          expand_aliases,
          include_error_detail,
@@ -51,19 +49,25 @@ def main(ctx,
     if not key:
         auth = (username, password)
 
-    eapi_options = eapix.types.EapiOptions(
-        format=format,
-        streaming=streaming,
-        auto_complete=auto_complete,
-        expand_aliases=expand_aliases,
-        include_error_detail=include_error_detail
-    )
+    # eapi_options = eapix.types.EapiOptions(
+    #     encoding=encoding,
+    #     streaming=streaming,
+    #     auto_complete=auto_complete,
+    #     expand_aliases=expand_aliases,
+    #     include_error_detail=include_error_detail
+    # )
     ctx.obj = {
         'targets': targets,
-        'options': eapi_options,
-        'auth': auth,
-        'cert': pair,
-        'verify': verify,
+        "args": {
+            'auth': auth,
+            'cert': pair,
+            'verify': verify,
+            'encoding': encoding,
+            'streaming': streaming,
+            'auto_complete': auto_complete,
+            'expand_aliases': expand_aliases,
+            'include_error_detail': include_error_detail
+        }
     }
 
 @main.command()
@@ -71,10 +75,9 @@ def main(ctx,
 @click.pass_context
 def execute(ctx, commands):
     targets = ctx.obj["targets"]
-    options = ctx.obj["options"]
-    auth = ctx.obj["auth"]
-    cert = ctx.obj["cert"]
-    verify = ctx.obj["verify"]
+    # auth = ctx.obj["auth"]
+    # cert = ctx.obj["cert"]
+    # verify = ctx.obj["verify"]
 
     async def _consumer(channel):
         while True:
@@ -83,7 +86,7 @@ def execute(ctx, commands):
             if rsp is None:
                 break
 
-            if options.format == "json":
+            if ctx.obj["args"]["encoding"] == "json":
                 print(rsp.json)
             else:
                 print(rsp.pretty)
@@ -99,10 +102,7 @@ def execute(ctx, commands):
                     channel,
                     target,
                     commands,
-                    options,
-                    auth=auth,
-                    cert=cert,
-                    verify=verify
+                    **ctx.obj["args"]
                 )
             )
             tasks.append(producer)
@@ -130,7 +130,7 @@ def watch(ctx, command, interval, deadline, exclude, condition):
     verify = ctx.obj["verify"]
 
     def _cb(response, matched):
-        if options.format == "json":
+        if ctx.obj["args"]["encoding"] == "json":
             print(response.json)
         else:
             util.clear_screen()

@@ -11,7 +11,7 @@ import pytest
 
 from eapix.util import prepare_request
 from eapix.types import Certificate, EapiOptions
-from eapix.sessions import Session
+from eapix.session import Session
 from eapix.messages import _TARGET_RE, Target, Response
 
 
@@ -91,7 +91,7 @@ def commands():
 @pytest.fixture(params=["json", "text"])
 def request_(commands, request) -> Dict:
     return prepare_request(commands,  EapiOptions(
-        format=request.param))
+        encoding=request.param))
 
 @pytest.fixture()
 def httpx_404(): ...
@@ -131,7 +131,7 @@ def text_response():
 @pytest.fixture()
 def json_response():
     request = prepare_request(["show hostname", "show version"], EapiOptions(
-        format="json"
+        encoding="json"
     ))
     response = {
         'jsonrpc': '2.0',
@@ -165,7 +165,7 @@ def json_response():
 @pytest.fixture()
 def errored_response():
     request = prepare_request(["show hostname", "show bogus"], EapiOptions(
-        format="json"
+        encoding="json"
     ))
     response = {
         'jsonrpc': '2.0',

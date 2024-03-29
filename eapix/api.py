@@ -12,9 +12,12 @@ from typing import Callable, Iterator, List, Optional, Union
 from eapix.version import __version__
 from eapix.types import Auth, Certificate, Command, CommandList, EapiOptions
 from eapix.messages import Response
-from eapix.sessions import Session, AsyncSession
+from eapix.session import Session, AsyncSession
+from eapix.environment import EAPI_DEFAULT_FORMAT
 
-NEVER_RE = r'(?!x)x'
+NEVER_RE: str = r'(?!x)x'
+EAPI_WATCH_INTERVAL: int = 2
+EAPI_WATCH_DEADLINE: float = math.inf
 
 def version():
     """get installed version
@@ -24,64 +27,64 @@ def version():
 
 def execute(target: str,
             commands: CommandList,
-            options: EapiOptions = EapiOptions(),
             auth: Optional[Auth] = None,
+            encoding: str = EAPI_DEFAULT_FORMAT,
+            enable: bool = False,
+            secret: str = "",
             cert: Optional[Certificate] = None,
-            verify: Optional[bool] = None,
-            **kwargs) -> Response:
+            verify: bool = False,
+            auto_complete: bool = False,
+            expand_aliases: bool = False,
+            include_error_detail: bool = False,
+            timestamps: bool = False,
+            streaming: bool = False
+        ) -> Response:
     """Send an eAPI request
 
     :param target: eAPI target
     :param type: Target
     :param commmands: List of commands to send to target
     :param type: list
-    :param format: json or text (default: json)
+    :param auth:
+    :param type: tuple
+    :param encoding: json or text (default: json)
     :param type: str
-    :param **kwargs: pass through ``httpx`` options
+    :param enable:
+    :param type: bool
+    :param secret:
+    :param type: str
+    :param cert:
+    :param verify:
+    :param auto_complete:
+    :param type: bool
+    :param expand_aliases:
+    :param type: bool
+    :param include_error_detail:
+    :param type: bool
+    :param timestamps:
+    :param type: bool
+    :param streaming:
+    :param type: bool
 
     :return: :class:`Response <Response>` object
     :rtype: eapi.messages.Response
     """
+
+    if enable:
+        commands.insert(0, Command(cmd="enable", input=secret))
 
     with Session(auth=auth, cert=cert, verify=verify) as sess:
-        return sess.call(target, commands, options, **kwargs)
+        return sess.call(target, commands, EapiOptions(
+            encoding=encoding,
+            timestamps=timestamps,
+            auto_complete=auto_complete,
+            expand_aliases=expand_aliases,
+            include_error_detail=include_error_detail,
+            streaming=streaming
+        ))
 
-
-def enable(target: str,
-           commands: CommandList,
-           secret: str = "",
-           options: EapiOptions = EapiOptions(),
-           **kwargs) -> Response:
-    """Prepend 'enable' command
-    :param target: eAPI target
-    :param type: Target
-    :param commmands: List of commands to send to target
-    :param type: list
-    :param options: eapi options
-    :param type: EapiOptions
-    :param **kwargs: Optional arguments that ``_send`` takes.
-
-    :return: :class:`Response <Response>` object
-    :rtype: eapi.messages.Response
-    """
-
-    commands.insert(0, Command(cmd="enable", input=secret))
-    return execute(target, commands, options, **kwargs)
-
-
-def configure(target: str,
-              commands: CommandList,
-              options: EapiOptions = EapiOptions(),
-              **kwargs) -> Response:
+def configure(target: str, commands: CommandList, *args, **kwargs) -> Response:
     """Wrap commands in a 'configure'/'end' block
-
-    :param target: eAPI target
-    :param type: Target
-    :param commmands: List of commands to send to target
-    :param type: list
-    :param options: eapi options
-    :param type: EapiOptions
-    :param **kwargs: Optional arguments that ``execute`` takes.
 
     :return: :class:`Response <Response>` object
     :rtype: eapi.messages.Response
@@ -89,18 +92,17 @@ def configure(target: str,
 
     commands.insert(0, Command("configure"))
     commands.append(Command("end"))
-    return execute(target, commands, options, **kwargs)
+    return execute(target, commands, *args, **kwargs)
 
 
 def watch(target: str,
           command: Union[str, Command],
-          options: EapiOptions = EapiOptions(),
           callback: Callable = None,
-          interval: Optional[int] = None,
-          deadline: Optional[float] = None,
+          interval: Optional[int] = EAPI_WATCH_INTERVAL,
+          deadline: Optional[float] = EAPI_WATCH_DEADLINE,
           exclude: bool = False,
-          condition: Optional[str] = None,
-          **kwargs) -> Optional[Iterator[Response]]:
+          condition: Optional[str] = NEVER_RE,
+          *args, **kwargs) -> Optional[Iterator[Response]]:
     """Watch a command until deadline or condition matches
 
     :param target: eAPI target
@@ -130,20 +132,11 @@ def watch(target: str,
 
     exclude = bool(exclude)
 
-    if not interval:
-        interval = 2
-
-    if not deadline:
-        deadline = math.inf
-
-    if not condition:
-        condition = NEVER_RE
-
     start = time.time()
     check = start
 
     while (check - deadline) < start:
-        response = execute(target, [command], options, **kwargs)
+        response = execute(target, [command], *args, **kwargs)
         match = re.search(condition, str(response))
 
         if exclude and not match:
@@ -163,11 +156,17 @@ def watch(target: str,
 async def aexecute(channel: asyncio.Queue,
                    target: str,
                    commands: CommandList,
-                   options: EapiOptions = EapiOptions(),
                    auth: Optional[Auth] = None,
+                   encoding: str = EAPI_DEFAULT_FORMAT,
+                   enable: bool = False,
+                   secret: str = "",
                    cert: Optional[Certificate] = None,
-                   verify: Optional[bool] = None,
-                   **kwargs) -> None:
+                   verify: bool = False,
+                   auto_complete: bool = False,
+                   expand_aliases: bool = False,
+                   include_error_detail: bool = False,
+                   timestamps: bool = False,
+                   streaming: bool = False) -> None:
     """Send command(s) to an eAPI target (async version)
 
     :param channel: results channel
@@ -176,49 +175,48 @@ async def aexecute(channel: asyncio.Queue,
     :param type: Target
     :param commmands: List of commands to send to target
     :param type: list
-    :param options: eapi options
-    :param type: EapiOptions
-    :param **kwargs: pass through ``httpx`` options
+    :param auth:
+    :param type: tuple
+    :param encoding: json or text (default: json)
+    :param type: str
+    :param enable:
+    :param type: bool
+    :param secret:
+    :param type: str
+    :param cert:
+    :param verify:
+    :param auto_complete:
+    :param type: bool
+    :param expand_aliases:
+    :param type: bool
+    :param include_error_detail:
+    :param type: bool
+    :param timestamps:
+    :param type: bool
+    :param streaming:
+    :param type: bool
 
     :return: :class:`Response <Response>` object
     :rtype: eapi.messages.Response
     """
-    
+
+    if enable:
+        commands.insert(0, Command(cmd="enable", input=secret))
+
     async with AsyncSession(auth=auth, cert=cert, verify=verify) as sess:
-        response = await sess.call(target, commands, options, **kwargs)
+        response = await sess.call(target, commands, EapiOptions(
+            encoding=encoding,
+            timestamps=timestamps,
+            auto_complete=auto_complete,
+            expand_aliases=expand_aliases,
+            include_error_detail=include_error_detail,
+            streaming=streaming
+        ))
 
         await channel.put(response)
 
-async def aenable(channel: asyncio.Queue,
-                  target: str, commands: CommandList,
-                  secret: str = "",
-                  options: EapiOptions = EapiOptions(),
-                  **kwargs):
-    """Prepend 'enable' command (async version)
-    
-    :param channel: results channel
-    :param type: asyncio.Queue
-    :param target: eAPI target
-    :param type: Target
-    :param commmands: List of commands to send to target
-    :param type: list
-    :param options: eapi options
-    :param type: EapiOptions
-    :param **kwargs: Optional arguments that ``_send`` takes.
-
-    :return: :class:`Response <Response>` object
-    :rtype: eapi.messages.Response
-    """
-
-    commands.insert(0, Command(cmd="enable", input=secret))
-    await aexecute(channel, target, commands, options, **kwargs)
-
-
-async def aconfigure(channel: asyncio.Queue,
-                     target: str,
-                     commands: CommandList,
-                     options: EapiOptions = EapiOptions(),
-                     **kwargs):
+async def aconfigure(channel: asyncio.Queue, target: str, commands: CommandList,
+                     *args, **kwargs):
     """Wrap commands in a 'configure'/'end' block (async version)
 
     :param channel: results channel
@@ -227,9 +225,6 @@ async def aconfigure(channel: asyncio.Queue,
     :param type: Target
     :param commmands: List of commands to send to target
     :param type: list
-    :param options: eapi options
-    :param type: EapiOptions
-    :param **kwargs: Optional arguments that ``execute`` takes.
 
     :return: :class:`Response <Response>` object
     :rtype: eapi.messages.Response
@@ -237,18 +232,17 @@ async def aconfigure(channel: asyncio.Queue,
 
     commands.insert(0, "configure")
     commands.append("end")
-    await aexecute(channel, target, commands, options, **kwargs)
+    await aexecute(channel, target, commands, *args, **kwargs)
 
 
 async def awatch(channel: asyncio.Queue,
                  target: str,
                  command: Union[str, Command],
-                 options: EapiOptions = EapiOptions(),
-                 interval: int = 1,
-                 deadline: float = math.inf,
+                 interval: Optional[int] = EAPI_WATCH_INTERVAL,
+                 deadline: Optional[float] = EAPI_WATCH_DEADLINE,
                  exclude: bool = False,
-                 condition: str = NEVER_RE,
-                 **kwargs):
+                 condition: Optional[str] = NEVER_RE,
+                 *args, **kwargs):
 
     """Watch a command until deadline or condition matches (async version)
 
@@ -282,7 +276,7 @@ async def awatch(channel: asyncio.Queue,
     check = start
 
     while (check - deadline) < start:
-        await aexecute(rsp_chan, target, [command], options, **kwargs)
+        await aexecute(rsp_chan, target, [command], *args, **kwargs)
         response = await rsp_chan.get()
 
         match = re.search(condition, str(response))
