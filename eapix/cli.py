@@ -49,13 +49,6 @@ def main(ctx,
     if not key:
         auth = (username, password)
 
-    # eapi_options = eapix.types.EapiOptions(
-    #     encoding=encoding,
-    #     streaming=streaming,
-    #     auto_complete=auto_complete,
-    #     expand_aliases=expand_aliases,
-    #     include_error_detail=include_error_detail
-    # )
     ctx.obj = {
         'targets': targets,
         "args": {
@@ -75,9 +68,8 @@ def main(ctx,
 @click.pass_context
 def execute(ctx, commands):
     targets = ctx.obj["targets"]
-    # auth = ctx.obj["auth"]
-    # cert = ctx.obj["cert"]
-    # verify = ctx.obj["verify"]
+    
+    loop = asyncio.get_event_loop()
 
     async def _consumer(channel):
         while True:
@@ -97,22 +89,23 @@ def execute(ctx, commands):
         asyncio.create_task(_consumer(channel))
 
         for target in targets:
-            producer = asyncio.create_task(
-                eapix.aexecute(
+            tasks.append(eapix.aexecute(
                     channel,
                     target,
                     commands,
                     **ctx.obj["args"]
-                )
-            )
-            tasks.append(producer)
+                ))
 
         await asyncio.gather(*tasks)
-        # shutdown the channel
+        #await util.gather_with_exceptions(*tasks)
         await channel.put(None)
 
     channel = asyncio.Queue()
-    asyncio.run(_run(channel))
+
+    try:
+        loop.run_until_complete(_run(channel))
+    except Exception as exc:
+        print(repr(exc))
 
 @main.command()
 @click.argument("command", nargs=1, required=True)

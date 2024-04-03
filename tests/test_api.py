@@ -8,7 +8,7 @@ import pytest
 
 import eapix
 import eapix.api
-from eapix.messages import Response
+from eapix.response import Response
 
 # from tests.conftest import EAPI_TARGET
 
@@ -64,16 +64,15 @@ def test_configure(server, auth):
 def test_watch(server, auth):
     target = str(server.url)
     def _cb(r, matched: bool):
-        assert isinstance(r, eapix.messages.Response)
+        assert isinstance(r, Response)
     
     eapix.watch(target, "show clock", callback=_cb, auth=auth, deadline=10)
     
 
 @pytest.mark.asyncio
 async def test_aexecute(server, commands, auth):
-    channel = asyncio.Queue()
     target = str(server.url)
-    await eapix.aexecute(channel, target, commands, auth=auth)
+    rsp = await eapix.aexecute(target, commands, auth=auth)
 
 @pytest.mark.asyncio
 async def test_awatch(server, auth):
@@ -98,7 +97,7 @@ async def async_consumer(channel):
         if rsp is None:
             break
         
-        assert isinstance(rsp[0], eapix.messages.Response)
+        assert isinstance(rsp[0], Response)
 
     
 

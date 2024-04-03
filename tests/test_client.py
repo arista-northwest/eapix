@@ -6,13 +6,14 @@ from sys import version
 import httpx
 import pytest
 
-from eapix.util import prepare_request, asdict_pruned
+from eapix.util import prepare_request
 
 import eapix
 import eapix.exceptions
-import eapix.session
-from eapix.messages import Target, Response
-from eapix.session import Session, AsyncSession
+import eapix.client
+from eapix.response import Response
+from eapix.client import Client, AsyncClient
+from eapix.types import Target
 
 def test_login(session, server, auth):
     target = str(server.url)
@@ -21,13 +22,13 @@ def test_login(session, server, auth):
 
 
 def test_login_err(server):
-    target = Target.from_string(str(server.url))
-    with Session() as sess:
+    target = Target.from_url(str(server.url))
+    with Client() as sess:
         with pytest.raises(eapix.exceptions.EapiAuthenticationFailure):
             sess.login(target, ("b4d", "p4ss"))
 
         with pytest.raises(eapix.exceptions.EapiAuthenticationFailure):
-            sess._call(Target.from_string(target).url + "/login", data={})
+            sess._call(Target.from_url(target).to_url() + "/login", data={})
 
 
 def test_call(session, server, auth):
@@ -37,17 +38,17 @@ def test_call(session, server, auth):
 
 def test_http_error(session, server):
     target = str(server.url)
-    t = Target.from_string(target)
+    t = Target.from_url(target)
     with pytest.raises(eapix.exceptions.EapiPathNotFoundError):
-        session._call(t.url + "/badpath", {})
+        session._call(t.to_url() + "/badpath", {})
 
 
 def test_jsonrpc_error(session, server):
     target = str(server.url)
-    tgt = Target.from_string(target)
+    tgt = Target.from_url(target)
     req = prepare_request(["show hostname"])
     req["method"] = "bogus"
-    resp = session._call(tgt.url + "/command-api", req)
+    resp = session._call(tgt.to_url() + "/command-api", req)
 
     rresp = Response.from_rpc_response(tgt, req, resp.json())
 
@@ -55,19 +56,19 @@ def test_jsonrpc_error(session, server):
 
 def test_context(server, auth):
     target = str(server.url)
-    with Session() as sess:
+    with Client() as sess:
         sess.login(target, auth=auth)
         sess.call(target, ["show hostname"])
 
 
 def test_ssl_verify(starget, cert):
-    sess = Session(cert=cert)
+    sess = Client(cert=cert)
     with pytest.raises(eapix.exceptions.EapiError):
         sess.call(starget, ["show hostname"])
 
 def test_logout(server, auth):
     target = str(server.url)
-    with Session() as sess:
+    with Client() as sess:
         sess.login(target, auth=auth)
         sess.logout(target)
 
@@ -84,14 +85,14 @@ def test_unauth(session, server):
 
 # def test_call_noauth(session, server, auth):
 #     target = str(server.url)
-#     sess = Session()
+#     sess = Client()
 #     with pytest.raises(eapi.exceptions.EapiAuthenticationFailure):
 #         sess.call(target, ["show hostname"], auth=auth)
 
 
 @pytest.mark.asyncio
 async def test_async(server, auth):
-    target = Target.from_string(str(server.url))
+    target = Target.from_url(str(server.url))
     targets = [target] * 4
     commands = [
         "show version",
@@ -99,7 +100,7 @@ async def test_async(server, auth):
         "show clock",
     ] * 3
 
-    async with AsyncSession(auth=auth) as sess:
+    async with AsyncClient(auth=auth) as sess:
         tasks = []
         for t in targets:
             for c in commands:

@@ -22,12 +22,13 @@ from eapix.exceptions import (
 from eapix.types import (
     Auth,
     Certificate,
-    CommandList
+    CommandList,
+    Target
 )
 
-from eapix.messages import Response, Target
+from eapix.response import Response
 
-class BaseSession(object):
+class BaseClient:
 
     def __init__(self,
                  klass: Type[Union[httpx.Client, httpx.AsyncClient]],
@@ -39,8 +40,8 @@ class BaseSession(object):
         if verify is None:
             verify = eapix.environment.SSL_VERIFY
 
-        # use a httpx Session to manage state
-        self._session = klass(
+        # use a httpx client to manage state
+        self._client = klass(
             auth=auth,
             cert=cert,
             headers={"Content-Type": "application/json"},
@@ -82,21 +83,18 @@ class BaseSession(object):
             # store auth if login fails (without throwing an exception)
             options["auth"] = auth
 
-        self._eapi_sessions[target.domain] = options
+        self._eapi_sessions[target.fqdn] = options
 
-    def logged_in(self,
-                  target: Union[str, Target],
-                  transport: Optional[str] = None
-                  ) -> bool:
+    def logged_in(self, target: str) -> bool:
         """determines if session cookie is set"""
-        target_: Target = Target.from_string(target)
+        target_ = Target.from_url(target)
 
-        cookie = self._session.cookies.get("Session", domain=target_.domain)
+        cookie = self._client.cookies.get("Session", domain=target_.fqdn)
 
         return True if cookie else False
 
 
-class Session(BaseSession):
+class Client(BaseClient):
     def __init__(self,
                  auth: Optional[Auth] = None,
                  cert: Optional[Certificate] = None,
@@ -111,7 +109,7 @@ class Session(BaseSession):
             **kwargs
         )
 
-    def __enter__(self) -> "Session":
+    def __enter__(self) -> "Client":
         return self
 
     def __exit__(self, *args) -> None:
@@ -126,7 +124,7 @@ class Session(BaseSession):
             options["timeout"] = eapix.environment.EAPI_DEFAULT_TIMEOUT
 
         try:
-            response = self._session.post(url, content=json.dumps(data), **options)
+            response = self._client.post(url, content=json.dumps(data), **options)
         except httpx.HTTPError as exc:
             raise EapiError(str(exc))
 
@@ -136,7 +134,7 @@ class Session(BaseSession):
 
     def close(self):
         """shutdown the underlying httpx session"""
-        self._session.close()
+        self._client.close()
 
     def logout(self, target: Union[str, Target]) -> None:
         """Log out of an eAPI session
@@ -146,15 +144,15 @@ class Session(BaseSession):
 
         """
 
-        target_: Target = Target.from_string(target)
+        _target: Target = Target.from_url(target)
 
-        if target_.domain in self._eapi_sessions:
-            del self._eapi_sessions[target_.domain]
+        if _target.fqdn in self._eapi_sessions:
+            del self._eapi_sessions[_target.fqdn]
 
         if self.logged_in(target):
-            self._call(target_.url + "/logout", data={})
+            self._call(f"{_target}/logout", data={})
 
-    def login(self, target: Union[str, Target], auth: Optional[Auth] = None) -> None:
+    def login(self, target: str, auth: Optional[Auth] = None) -> None:
         """Login to an eAPI session
 
         :param target: eAPI target (host, port)
@@ -162,24 +160,24 @@ class Session(BaseSession):
         :param auth: username, password tuple
         :param type: Auth
         """
-        target_: Target = Target.from_string(target)
+        _target: Target = Target.from_url(target)
 
         if self.logged_in(target):
             return
 
-        username, password = auth or self._session.auth
+        username, password = auth or self._client.auth
         payload = {"username": username, "password": password}
 
-        resp = self._call(target_.url + "/login", data=payload)
+        resp = self._call(f"{_target}/login", data=payload)
 
-        self._handle_login_response(target_, auth, resp)
+        self._handle_login_response(_target, auth, resp)
 
-    def call(self, target: Union[str, Target], commands: CommandList,
+    def call(self, target: str, commands: CommandList,
              options: EapiOptions = EapiOptions(), **kwargs):
         """call commands to an eAPI target
 
         :param target: eAPI target (host, port)
-        :param type: Target
+        :param type: str
         :param commands: List of `Command` objects
         :param type: list
         :param options: eapi options
@@ -189,21 +187,21 @@ class Session(BaseSession):
 
         """
 
-        target_: Target = Target.from_string(target)
+        _target: Target = Target.from_url(target)
 
         # get session defaults (set at login)
-        httpx_args = self._eapi_sessions.get(target_.domain) or {}
+        httpx_args = self._eapi_sessions.get(_target.fqdn) or {}
         httpx_args.update(kwargs)
 
         request = prepare_request(commands, options)
 
-        response = self._call(target_.url + "/command-api",
+        response = self._call(f"{_target}/command-api",
                               data=request, **httpx_args)
 
-        return Response.from_rpc_response(target_, request, response.json())
+        return Response.from_rpc_response(_target, request, response.json())
 
 
-class AsyncSession(BaseSession):
+class AsyncClient(BaseClient):
     def __init__(self,
                  auth: Optional[Auth] = None,
                  cert: Optional[Certificate] = None,
@@ -218,7 +216,7 @@ class AsyncSession(BaseSession):
             **kwargs
         )
 
-    async def __aenter__(self) -> "AsyncSession":
+    async def __aenter__(self) -> "AsyncClient":
         return self
 
     async def __aexit__(self, *args) -> None:
@@ -233,7 +231,7 @@ class AsyncSession(BaseSession):
             options["timeout"] = eapix.environment.EAPI_DEFAULT_TIMEOUT
 
         try:
-            response = await self._session.post(url, content=json.dumps(data),
+            response = await self._client.post(url, content=json.dumps(data),
                                                 **options)
         except httpx.HTTPError as exc:
             raise EapiError(str(exc))
@@ -243,45 +241,45 @@ class AsyncSession(BaseSession):
         return response
 
     async def close(self) -> None:
-        await self._session.aclose()
+        await self._client.aclose()
 
-    async def login(self, target: Union[str, Target], auth: Optional[Auth] = None) -> None:
+    async def login(self, target: str, auth: Optional[Auth] = None) -> None:
         """Login to an eAPI session
 
         :param target: eAPI target (host, port)
-        :param type: Target
+        :param type: str
         :param auth: username, password tuple
         :param type: Auth
         """
-        target_: Target = Target.from_string(target)
+        target_: Target = Target.from_url(target)
 
         if self.logged_in(target):
             return
 
-        username, password = auth or self._session.auth
+        username, password = auth or self._client.auth
         payload = {"username": username, "password": password}
 
         resp = await self._call(target_.url + "/login", data=payload)
 
         self._handle_login_response(target_, auth, resp)
 
-    async def logout(self, target: Union[str, Target]) -> None:
+    async def logout(self, target: str) -> None:
         """Log out of an eAPI session
 
         :param target: eAPI target (host, port)
-        :param type: Target
+        :param type: str
 
         """
 
-        target_: Target = Target.from_string(target)
+        target_: Target = Target.from_url(target)
 
-        if target_.domain in self._eapi_sessions:
-            del self._eapi_sessions[target_.domain]
+        if target_.fqdn in self._eapi_sessions:
+            del self._eapi_sessions[target_.fqdn]
 
         if self.logged_in(target):
             await self._call(target_.url + "/logout", data={})
 
-    async def call(self, target: Union[str, Target], commands: CommandList,
+    async def call(self, target: str, commands: CommandList,
                    options: EapiOptions = EapiOptions(), **kwargs):
         """call commands to an eAPI target
 
@@ -296,15 +294,15 @@ class AsyncSession(BaseSession):
 
         """
 
-        target_: Target = Target.from_string(target)
-
+        _target: Target = Target.from_url(target)
+        
         # get session defaults (set at login)
-        httpx_args = self._eapi_sessions.get(target_.domain) or {}
+        httpx_args = self._eapi_sessions.get(_target.fqdn) or {}
         httpx_args.update(kwargs)
 
         request = prepare_request(commands, options)
 
-        response = await self._call(target_.url + "/command-api",
+        response = await self._call(f"{_target}/command-api",
                                     data=request, **httpx_args)
 
-        return Response.from_rpc_response(target_, request, response.json())
+        return Response.from_rpc_response(_target, request, response.json())

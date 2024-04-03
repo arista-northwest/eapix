@@ -11,8 +11,8 @@ from typing import Callable, Iterator, List, Optional, Union
 
 from eapix.version import __version__
 from eapix.types import Auth, Certificate, Command, CommandList, EapiOptions
-from eapix.messages import Response
-from eapix.session import Session, AsyncSession
+from eapix.response import Response
+from eapix.client import Client, AsyncClient
 from eapix.environment import EAPI_DEFAULT_FORMAT
 
 NEVER_RE: str = r'(?!x)x'
@@ -73,7 +73,7 @@ def execute(target: str,
     if enable:
         commands.insert(0, Command(cmd="enable", input=secret))
 
-    with Session(auth=auth, cert=cert, verify=verify) as sess:
+    with Client(auth=auth, cert=cert, verify=verify) as sess:
         return sess.call(target, commands, EapiOptions(
             encoding=encoding,
             timestamps=timestamps,
@@ -153,8 +153,7 @@ def watch(target: str,
         check = time.time()
 
 
-async def aexecute(channel: asyncio.Queue,
-                   target: str,
+async def aexecute(target: str,
                    commands: CommandList,
                    auth: Optional[Auth] = None,
                    encoding: str = EAPI_DEFAULT_FORMAT,
@@ -203,7 +202,7 @@ async def aexecute(channel: asyncio.Queue,
     if enable:
         commands.insert(0, Command(cmd="enable", input=secret))
 
-    async with AsyncSession(auth=auth, cert=cert, verify=verify) as sess:
+    async with AsyncClient(auth=auth, cert=cert, verify=verify) as sess:
         response = await sess.call(target, commands, EapiOptions(
             encoding=encoding,
             timestamps=timestamps,
@@ -213,7 +212,7 @@ async def aexecute(channel: asyncio.Queue,
             streaming=streaming
         ))
 
-        await channel.put(response)
+        return response
 
 async def aconfigure(channel: asyncio.Queue, target: str, commands: CommandList,
                      *args, **kwargs):
@@ -232,7 +231,7 @@ async def aconfigure(channel: asyncio.Queue, target: str, commands: CommandList,
 
     commands.insert(0, "configure")
     commands.append("end")
-    await aexecute(channel, target, commands, *args, **kwargs)
+    return await aexecute(channel, target, commands, *args, **kwargs)
 
 
 async def awatch(channel: asyncio.Queue,
@@ -265,7 +264,7 @@ async def awatch(channel: asyncio.Queue,
     :param **kwargs: optional arguments that ``execute`` takes.
     """
 
-    rsp_chan = asyncio.Queue()
+    # rsp_chan = asyncio.Queue()
     response: Response
 
     matched: bool = False
@@ -276,8 +275,7 @@ async def awatch(channel: asyncio.Queue,
     check = start
 
     while (check - deadline) < start:
-        await aexecute(rsp_chan, target, [command], *args, **kwargs)
-        response = await rsp_chan.get()
+        response = await aexecute(target, [command], *args, **kwargs)
 
         match = re.search(condition, str(response))
 
@@ -295,5 +293,5 @@ async def awatch(channel: asyncio.Queue,
         time.sleep(interval)
         check = time.time()
     
-    await rsp_chan.put(None)
+    # await rsp_chan.put(None)
     await channel.put(None)

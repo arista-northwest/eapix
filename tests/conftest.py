@@ -10,16 +10,16 @@ from typing import Dict
 import pytest
 
 from eapix.util import prepare_request
-from eapix.types import Certificate, EapiOptions
-from eapix.session import Session
-from eapix.messages import _TARGET_RE, Target, Response
+from eapix.types import Certificate, EapiOptions, Target
+from eapix.client import Client
+from eapix.response import Response
 
 
 sys.path.insert(0, os.path.abspath("."))
 
 
-EAPI_TARGET = os.environ.get('EAPI_TARGET', "localhost:8000")
-EAPI_STARGET = os.environ.get('EAPI_STARGET', "localhost:8001")
+EAPI_TARGET = os.environ.get('EAPI_TARGET', "http://localhost:8000")
+EAPI_STARGET = os.environ.get('EAPI_STARGET', "https://localhost:8001")
 EAPI_USER = os.environ.get('EAPI_USER', "admin")
 EAPI_PASSWORD = os.environ.get('EAPI_PASSWORD', "")
 EAPI_CLIENT_CERT = os.environ.get('EAPI_CLIENT_CERT')
@@ -42,7 +42,6 @@ else:
 def auth():
     return (EAPI_USER, EAPI_PASSWORD)
 
-
 @pytest.fixture
 def cert():
     cert: Certificate = None
@@ -55,11 +54,9 @@ def cert():
 
     return cert
 
-
 @pytest.fixture
 def session(cert, auth):
-    return Session(auth=auth, cert=cert, verify=False)
-
+    return Client(auth=auth, cert=cert, verify=False)
 
 @pytest.fixture
 def target():
@@ -68,20 +65,7 @@ def target():
 
 @pytest.fixture
 def starget(target):
-    if not target:
-        return None
-    port = None
-
-    if EAPI_STARGET:
-        _, hostname, port = _TARGET_RE.match(EAPI_STARGET).groups()
-    else:
-        _, hostname, _ = _TARGET_RE.match(target).groups()
-
-    starget = "https://%s" % hostname
-    if port:
-        starget += ":%d" % int(port)
-
-    return starget
+    return EAPI_STARGET
 
 
 @pytest.fixture()
@@ -125,7 +109,7 @@ def text_response():
         ]
     }
     
-    return Target.from_string("localhost"), request, response
+    return Target.from_url("localhost"), request, response
 
 
 @pytest.fixture()
@@ -159,7 +143,7 @@ def json_response():
         ]
     }
     resp = Response.from_rpc_response(target, request, response)
-    return Target.from_string("localhost"), request, response
+    return Target.from_url("localhost"), request, response
 
 
 @pytest.fixture()
@@ -187,7 +171,7 @@ def errored_response():
         }
     }
 
-    return Target.from_string("localhost"), request, response
+    return Target.from_url("localhost"), request, response
 
 
 @pytest.fixture()
@@ -211,7 +195,7 @@ def errored_text_response():
         }
     }
 
-    return Target.from_string("localhost"), request, response
+    return Target.from_url("localhost"), request, response
 
 
 @pytest.fixture()
@@ -225,4 +209,4 @@ def jsonrpcerr_response():
         }
     }
 
-    return Target.from_string("localhost"), None, response
+    return Target.from_url("localhost"), None, response

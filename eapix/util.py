@@ -2,11 +2,12 @@
 # Copyright (c) 2020 Arista Networks, Inc.  All rights reserved.
 # Arista Networks, Inc. Confidential and Proprietary.
 
+import asyncio
 import os
 import uuid
 
 from dataclasses import asdict
-from typing import Optional, Union
+from typing import Optional, Union, Sequence, Coroutine
 #from _typeshed import DataclassInstance
 from eapix.types import Command, CommandList, EapiOptions
 
@@ -106,3 +107,14 @@ def asdict_pruned(data: object) -> dict[str, object]:
 
     return asdict(data, dict_factory=pruned_dict)
     
+async def gather_with_exceptions(*coroutines: Sequence[Coroutine]) -> list[tuple[object, Exception]]:
+    gathered = []
+    results = await asyncio.gather(*coroutines, return_exceptions=True)
+
+    for r in results:
+        if isinstance(r, Exception):
+            gathered.append((None, r)) 
+        else:
+            gathered.append((r, None))
+
+    return gathered
