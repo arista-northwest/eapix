@@ -16,7 +16,7 @@ API
 .. automodule:: eapi.api
     :inherited-members:
 
-Session
+Client
 -------
 
 .. automodule:: eapi.session

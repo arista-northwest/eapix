@@ -66,7 +66,7 @@ html_theme = 'alabaster'
 html_theme_options = {
     "show_powered_by": False,
     "github_user": "arista-northwest",
-    "github_repo": "gnmi-py",
+    "github_repo": "eapix",
     "github_banner": True,
     "show_related": False,
     "note_bg": "#FFF59C",
