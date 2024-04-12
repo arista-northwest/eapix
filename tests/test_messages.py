@@ -3,7 +3,7 @@
 # Arista Networks, Inc. Confidential and Proprietary.
 
 import pytest
-
+from pprint import pprint
 from eapix.response import Response, ResponseElem, TextResult, JsonResult
 
 def test_text_result(text_response):
@@ -37,35 +37,36 @@ def test_response_elem(json_response, text_response):
 def test_text_response(text_response):
     resp = Response.from_rpc_response(*text_response)
     assert resp.code == 0
-    assert "FQDN" in resp
-    assert "target" in resp
+    assert "FQDN" in resp.pretty
+    assert "target" in resp.pretty
     
     resp.to_dict()
-    for elem in resp:
+    for elem in resp.elements:
         assert isinstance(elem, ResponseElem)
 
 def test_json_response(json_response):
     resp = Response.from_rpc_response(*json_response)
     assert resp.code == 0
-    assert "fqdn" in resp
+    assert "fqdn" in resp.pretty
     resp.to_dict()
-    for elem in resp:
+    for elem in resp.elements:
         assert isinstance(elem, ResponseElem)
 
 def test_errored_response(errored_response):
     resp = Response.from_rpc_response(*errored_response)
     assert resp.code == 1002
+    assert "invalid" in resp.pretty
 
-    assert "invalid" in resp
     resp.to_dict()
-    for elem in iter(resp):
+    for elem in iter(resp.elements):
         assert isinstance(elem, ResponseElem)
 
 def test_errored_text_response(errored_text_response):
     resp = Response.from_rpc_response(*errored_text_response)
     assert resp.code == 1002
-    assert "invalid" in resp
+    assert "invalid" in resp.pretty
+    
     resp.to_dict()
-    for elem in resp:
+    for elem in resp.elements:
         assert isinstance(elem, ResponseElem)
 

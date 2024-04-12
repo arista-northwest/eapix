@@ -8,7 +8,6 @@ import re
 from collections.abc import Mapping
 from pprint import pformat
 from typing import List, Union, Optional
-#from typing_extensions import TypedDict
 
 from eapix.environment import EAPI_DEFAULT_TRANSPORT
 from eapix.types import Command, Error
@@ -35,7 +34,7 @@ class JsonResult(Mapping):
         return pformat(self._data)
 
 
-class TextResult(object):
+class TextResult:
     def __init__(self, result: str):
         self._data = result.strip()
 
@@ -47,7 +46,7 @@ class TextResult(object):
         return self._data
 
 
-class ResponseElem(object):
+class ResponseElem:
     def __init__(self, command: Command,
                  result: Union[TextResult, JsonResult]):
         self.command = command
@@ -68,7 +67,7 @@ class ResponseElem(object):
         return str(self.result)
 
 
-class Response(Mapping):
+class Response:
 
     def __init__(self, target, elements: List[ResponseElem],
                  error: Optional[Error] = None):
@@ -76,17 +75,17 @@ class Response(Mapping):
         self.elements = elements
         self.error = error
 
-    def __contains__(self, name):
-        return name in self.__str__()
+    # def __contains__(self, name):
+    #     return name in self.__str__()
 
-    def __getitem__(self, item):
-        return self.elements[item]
+    # def __getitem__(self, item):
+    #     return self.elements[item]
 
-    def __iter__(self):
-        return iter(self.elements)
+    # def __iter__(self):
+    #     return iter(self.elements)
 
-    def __len__(self):
-        return len(self.elements)
+    # def __len__(self):
+    #     return len(self.elements)
 
     @property
     def code(self):
