@@ -1,26 +1,30 @@
-[tool.poetry]
+[project]
 name = "eapix"
-version = "0.9.0"
-description = ""
-authors = ["Jesse Mather <jmather@arista.com>"]
+dynamic = ["version"]
+description = "asyncio eapi client"
 readme = "README.md"
+requires-python = ">=3.12"
+authors = [
+    {name = "Jesse Mather", email = "jmather@arista.com"},
+]
+dependencies = [
+    "httpx>=0.28.1",
+    "click>=8.1"
+]
 
-[tool.poetry.dependencies]
-python = "^3.10"
-httpx = "^0.27"
-click = "^8.1"
-
-[tool.poetry.dev-dependencies]
-flake8 = "^7.0"
-mypy = "^1.9"
-pytest = "^8.0"
-pytest-asyncio = "^0.23"
-uvicorn = "^0.29.0"
-sphinx = "^7.2.6"
-
-[tool.poetry.scripts]
+[project.scripts]
 eapix = "eapix.cli:main"
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[dependency-groups]
+dev = [
+    "flake8 >=7.0",
+    "mypy>=1.9",
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "uvicorn>=0.29.0",
+    "sphinx>=7.2.6",
+]
