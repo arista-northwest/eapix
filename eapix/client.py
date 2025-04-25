@@ -149,7 +149,7 @@ class Client(BaseClient):
         if _target.fqdn in self._eapi_sessions:
             del self._eapi_sessions[_target.fqdn]
 
-        if self.logged_in(target):
+        if self.logged_in(str(_target)):
             self._call(f"{_target}/logout", data={})
 
     def login(self, target: str, auth: Optional[Auth] = None) -> None:
@@ -259,7 +259,7 @@ class AsyncClient(BaseClient):
         username, password = auth or self._client.auth
         payload = {"username": username, "password": password}
 
-        resp = await self._call(target_.url + "/login", data=payload)
+        resp = await self._call(target_.to_url() + "/login", data=payload)
 
         self._handle_login_response(target_, auth, resp)
 
@@ -277,7 +277,7 @@ class AsyncClient(BaseClient):
             del self._eapi_sessions[target_.fqdn]
 
         if self.logged_in(target):
-            await self._call(target_.url + "/logout", data={})
+            await self._call(target_.to_url()+ "/logout", data={})
 
     async def call(self, target: str, commands: CommandList,
                    options: EapiOptions = EapiOptions(), **kwargs):
